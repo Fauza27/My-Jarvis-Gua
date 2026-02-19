@@ -287,9 +287,9 @@ So that data can be shared and cross-referenced efficiently
 | Task ID | Role | Description | Est. | Status | Notes |
 |---------|------|-------------|------|--------|-------|
 | T-16 | Database | Install PostgreSQL locally | 1h | ☐ | |
-| T-17 | Database | Install Prisma in packages/database | 1h | ☐ | |
+| T-17 | Database | Install SQLAlchemy in apps/api | 1h | ☐ | |
 | T-18 | Database | Design complete database schema | 4h | ☐ | Critical |
-| T-19 | Database | Create Prisma schema file | 2h | ☐ | |
+| T-19 | Database | Create SQLAlchemy models | 2h | ☐ | |
 | T-20 | Database | Add indexes for performance | 1h | ☐ | |
 | T-21 | Database | Create initial migration | 0.5h | ☐ | |
 | T-22 | Database | Run migration on local DB | 0.5h | ☐ | |
@@ -342,60 +342,67 @@ So that data can be shared and cross-referenced efficiently
 
 ---
 
-#### T-19: Create Prisma Schema File
-**Description:** Write Prisma schema with all models
+#### T-19: Create SQLAlchemy Models
+**Description:** Write SQLAlchemy models with all tables
 
-**Example Schema:**
-```prisma
-generator client {
-  provider = "prisma-client-js"
-}
+**Example Models:**
+```python
+# apps/api/app/models/user.py
+from sqlalchemy import Column, String, DateTime
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+from datetime import datetime
+import uuid
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+from app.core.database import Base
 
-model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  name         String?
-  telegramId   String?  @unique @map("telegram_id")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+class User(Base):
+    __tablename__ = "users"
 
-  profile      UserProfile?
-  expenses     Expense[]
-  foodLogs     FoodLog[]
-  weightLogs   WeightLog[]
-  workouts     Workout[]
-  vehicles     Vehicle[]
-  tasks        Task[]
-  conversations Conversation[]
-  notifications Notification[]
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String, unique=True, nullable=False, index=True)
+    password_hash = Column(String, nullable=False)
+    name = Column(String, nullable=True)
+    telegram_id = Column(String, unique=True, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-  @@map("users")
-}
+    # Relationships
+    expenses = relationship("Expense", back_populates="user", cascade="all, delete-orphan")
+    food_logs = relationship("FoodLog", back_populates="user", cascade="all, delete-orphan")
+    weight_logs = relationship("WeightLog", back_populates="user", cascade="all, delete-orphan")
+    workouts = relationship("Workout", back_populates="user", cascade="all, delete-orphan")
+    vehicles = relationship("Vehicle", back_populates="user", cascade="all, delete-orphan")
+    tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")
 
-model Expense {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  amount      Decimal  @db.Decimal(10, 2)
-  description String
-  category    String
-  date        DateTime
-  receiptUrl  String?  @map("receipt_url")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+# apps/api/app/models/expense.py
+from sqlalchemy import Column, String, DateTime, Numeric, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+from datetime import datetime
+import uuid
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+from app.core.database import Base
 
-  @@index([userId, date])
-  @@map("expenses")
-}
+class Expense(Base):
+    __tablename__ = "expenses"
 
-// ... more models
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    amount = Column(Numeric(10, 2), nullable=False)
+    description = Column(String, nullable=False)
+    category = Column(String, nullable=False)
+    date = Column(DateTime, nullable=False)
+    receipt_url = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", back_populates="expenses")
+
+    # Indexes will be created via Alembic migrations
+
+# ... more models
 ```
 
 ---
@@ -413,7 +420,56 @@ model Expense {
 - 2 maintenance logs
 - 5 tasks
 
-**Script Location:** `packages/database/seed.ts`
+**Script Location:** `apps/api/app/scripts/seed.py`
+
+**Example:**
+```python
+# apps/api/app/scripts/seed.py
+from sqlalchemy.orm import Session
+from app.core.database import SessionLocal, engine
+from app.models import User, Expense
+from datetime import datetime, timedelta
+import random
+
+def seed_database():
+    db = SessionLocal()
+    
+    try:
+        # Create test user
+        user = User(
+            email="test@example.com",
+            password_hash="$2b$12$...",  # hashed password
+            name="Test User",
+            telegram_id="123456789"
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        # Create expenses
+        categories = ["Food", "Transport", "Shopping", "Bills", "Entertainment"]
+        for i in range(10):
+            expense = Expense(
+                user_id=user.id,
+                amount=random.uniform(10, 500),
+                description=f"Test expense {i+1}",
+                category=random.choice(categories),
+                date=datetime.now() - timedelta(days=random.randint(0, 30))
+            )
+            db.add(expense)
+        
+        db.commit()
+        print("✅ Database seeded successfully!")
+        
+    except Exception as e:
+        print(f"❌ Error seeding database: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+if __name__ == "__main__":
+    seed_database()
+```
 
 ---
 

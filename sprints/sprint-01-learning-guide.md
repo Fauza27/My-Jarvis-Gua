@@ -148,7 +148,9 @@ Setelah Sprint 1, kamu harus bisa:
 - [ ] Buat 2-3 tabel dengan SQL
 - [ ] Practice CRUD queries di psql atau pgAdmin
 - [ ] Install SQLAlchemy: `pip install sqlalchemy psycopg2-binary`
+- [ ] Install Alembic (migration tool): `pip install alembic`
 - [ ] Buat model User dengan SQLAlchemy
+- [ ] Test koneksi database
 
 **Resources:**
 - Install: https://www.postgresql.org/download/
