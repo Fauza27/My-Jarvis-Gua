@@ -52,7 +52,8 @@ class RefreshTokenRequest(BaseModel):
 class UserOut(BaseModel):
     id: str
     email: EmailStr
-    email_confirmed: bool
+    created_at: str
+    email_confirmed: bool = False
 
 class TokenOut(BaseModel):
     access_token: str

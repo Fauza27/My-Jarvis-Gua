@@ -94,7 +94,7 @@ async def reset_password(
     )
 
 @router.get(
-    "/refresh",
+    "/verify",
     status_code=status.HTTP_200_OK,
     summary="verify access token and get current user info",
 )
@@ -106,3 +106,19 @@ async def verify_token(
         "user_id": str(current_user.id),
         "email": current_user.email,
     }
+
+@router.post(
+    "/forgot-password",
+    response_model=MessageOut,
+    status_code=status.HTTP_200_OK,
+    summary="Request password reset email",
+)
+async def forgot_password(
+    body: ResetPasswordRequest,
+    service: AuthService = Depends(get_auth_service),
+):
+    settings = get_settings()
+    return service.request_password_reset(
+        email=body.email,
+        redirect_url=settings.password_reset_url,
+    )

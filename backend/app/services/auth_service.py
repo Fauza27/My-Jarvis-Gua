@@ -25,6 +25,7 @@ class AuthService:
                 id=str(user.id),
                 email=user.email,
                 created_at=str(user.created_at),
+                email_confirmed=getattr(user, 'email_confirmed_at', None) is not None,
             )
         )
     
@@ -48,10 +49,11 @@ class AuthService:
                 id=str(user.id),
                 email=user.email,
                 created_at=str(user.created_at),
+                email_confirmed=getattr(user, 'email_confirmed_at', None) is not None,
             )
         )
     
     def request_password_reset(self, email: str, redirect_url: str) -> MessageOut:
         """Request password reset email."""
         self._auth_repo.request_password_reset(email, redirect_url)
-        return MessageOut(message="Password reset email sent. Please check your inbox.")
+        return MessageOut(message="If email is registered, password reset link will be sent.")

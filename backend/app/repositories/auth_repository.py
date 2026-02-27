@@ -15,24 +15,26 @@ class AuthRepository:
         """Register a new user with email and password."""
         try:
             response = self._client.auth.sign_up(
-                email=email,
-                password=password,
-                options={
-                    "emailRedirectTo": redirect_url
+                {
+                    "email": email,
+                    "password": password,
+                    "options": {
+                        "emailRedirectTo": redirect_url
+                    }
                 }
             )
             return response
         except AuthApiError as e:
-            if "alredy registered" in str(e.message).lower():
-                raise UserAlreadyExistsError("User with this email already exists")
+            error_msg = str(e.message).lower()
+            if "already registered" in error_msg or "alredy registered" in error_msg:
+                raise UserAlreadyExistsError("User with this email already exists.")
             raise AuthenticationError(f"Failed to register user: {e.message}")
     
     def login(self, email: str, password: str) -> object:
         """Login user with email and password."""
         try:
             response = self._client.auth.sign_in_with_password(
-                email=email,
-                password=password
+                {"email": email, "password": password}
             )
             return response
         except AuthApiError as e:
@@ -42,7 +44,7 @@ class AuthRepository:
                     "Email not confirmed. Please check your inbox."
                 )
             raise AuthenticationError(
-                "email or password is incorrect. Please try again."
+                "Invalid email or password."
             )
     
     def logout(self) -> None:
