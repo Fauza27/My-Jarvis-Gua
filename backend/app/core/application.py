@@ -23,8 +23,8 @@ def create_app() -> FastAPI:
         title=settings.APP_NAME,
         version=settings.VERSION,
         description="J.A.R.V.I.S Project",
-        docs_url="/docs" if settings.is_production else None,
-        redoc_url="/redoc" if settings.is_production else None,
+        docs_url="/docs" if not settings.is_production else None,
+        redoc_url="/redoc" if not settings.is_production else None,
     )
 
     _register_middleware(app, settings)
