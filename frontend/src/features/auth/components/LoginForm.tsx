@@ -1,0 +1,214 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, LogIn, Mail, Lock } from "lucide-react";
+import { LoginInput, loginSchema } from "../validations/authSchema";
+import { login } from "../api/authApi";
+import { useAuthStore } from "../store";
+import { mapServerError } from "../utils";
+import Link from "next/link";
+
+type FormState = "idle" | "loading" | "error" | "success";
+
+export function LoginForm() {
+  const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
+  const [formState, setFormState] = useState<FormState>("idle");
+  const [serverError, setServerError] = useState<string | null>(null);
+  const setAuth = useAuthStore((state) => state.setAuth);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    mode: "onBlur",
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const onSubmit = async (data: LoginInput) => {
+    setFormState("loading");
+    setServerError(null);
+
+    try {
+      const response = await login(data.email, data.password);
+      setAuth(response.access_token, response.refresh_token, response.expires_at, response.user);
+      setFormState("success");
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      router.push("/dashboard");
+    } catch (error) {
+      setFormState("error");
+      const errorMessage = error instanceof Error ? mapServerError(error.message) : "An unexpected error occurred. Please try again.";
+      setServerError(errorMessage);
+      setFormState("idle");
+    }
+  };
+
+  const isLoading = formState === "loading" || isSubmitting;
+  const isSuccess = formState === "success";
+  const isDisabled = isLoading || isSuccess;
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5 bg-card text-card-foreground">
+      {serverError && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="flex items-start gap-3 p-4 rounded-lg
+            bg-red-50 border border-red-200
+            text-sm text-red-700
+            animate-in fade-in slide-in-from-top-1 duration-200"
+        >
+          <AlertCircle className="w-4 h-4 t-0.5 shrink-0 text-red-500" />
+          <div className="space-y-1">
+            <p className="font-medium">Login Failed</p>
+            <p className="text-red-600">{serverError}</p>
+          </div>
+        </div>
+      )}
+
+      {isSuccess && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-3 p-4 rounded-lg
+            bg-green-50 border border-green-200
+            text-sm text-green-700
+            animate-in fade-in slide-in-from-top-1 duration-200"
+        >
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-green-500" />
+          <p>Login successful! Redirecting to dashboard...</p>
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        <label htmlFor="email" className="block text-sm font-medium text-foreground">
+          Email
+        </label>
+
+        <div className="relative">
+          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+          <input
+            {...register("email")}
+            id="email"
+            type="email"
+            autoComplete="email"
+            autoFocus
+            placeholder="email@gmail.com"
+            disabled={isDisabled}
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? "email-error" : undefined}
+            className={`
+              w-full h-11 pl-10 pr-3.5 rounded-lg border text-sm
+              text-foreground placeholder:text-muted-foreground
+              transition-colors duration-150
+              focus:outline-none focus:ring-2 focus:ring-offset-1
+              disabled:opacity-50 disabled:cursor-not-allowed
+              ${errors.email ? "border-red-400 bg-red-50 focus:ring-red-500 focus:border-red-400" : "border-input bg-background focus:ring-ring focus:border-primary"}
+            `}
+          />
+        </div>
+
+        {errors.email && (
+          <p id="email-error" role="alert" className="flex items-center gap-1.5 text-xs text-red-600 mt-1">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            {errors.email.message}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-1.5">
+        <label htmlFor="password" className="block text-sm font-medium text-foreground">
+          Password
+        </label>
+        <div className="relative">
+          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+          <input
+            {...register("password")}
+            id="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            placeholder="Enter your password"
+            disabled={isDisabled}
+            aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? "password-error" : undefined}
+            className={`
+              w-full h-11 pl-10 pr-11 rounded-lg border text-sm
+              text-foreground placeholder:text-muted-foreground
+              transition-colors duration-150
+              focus:outline-none focus:ring-2 focus:ring-offset-1
+              disabled:opacity-50 disabled:cursor-not-allowed
+              ${errors.password ? "border-red-400 bg-red-50 focus:ring-red-500 focus:border-red-400" : "border-input bg-background focus:ring-ring focus:border-primary"}
+            `}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            disabled={isDisabled}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            className="
+              absolute right-3 top-1/2 -translate-y-1/2
+              p-1 rounded text-foreground
+              hover:text-muted-foreground
+              focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1
+              disabled:opacity-50
+              transition-colors duration-150
+            "
+          >
+            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
+        {errors.password && (
+          <p id="password-error" role="alert" className="flex items-center gap-1.5 text-xs text-red-600 mt-1">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            {errors.password.message}
+          </p>
+        )}
+        <div className="flex items-center justify-end mt-2">
+          <Link href="/forgot-password" className="text-xs text-foreground hover:text-indigo-700 hover:underline focus:outline-none focus:underline" tabIndex={isDisabled ? -1 : 0}>
+            Forgot password?
+          </Link>
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        disabled={isDisabled}
+        className="
+          relative w-full h-11 px-4 rounded-lg
+          bg-primary hover:bg-primary/90 active:bg-primary/80
+          text-primary-foreground text-sm font-semibold
+          transition-all duration-150
+          focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2
+          disabled:opacity-60 disabled:cursor-not-allowed
+          flex items-center justify-center gap-2
+        "
+        aria-busy={isLoading}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+            <span>Processing...</span>
+          </>
+        ) : isSuccess ? (
+          <>
+            <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+            <span>Success!</span>
+          </>
+        ) : (
+          <>
+            <LogIn className="w-4 h-4" aria-hidden="true" />
+            <span>Login</span>
+          </>
+        )}
+      </button>
+    </form>
+  );
+}
