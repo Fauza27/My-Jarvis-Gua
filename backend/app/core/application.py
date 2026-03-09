@@ -1,8 +1,10 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from supabase import Client
 
 from app.core.config import get_settings
+from app.core.dependencies import get_supabase_client
 from app.core.exceptions import (
     AppError,
     AuthenticationError,
@@ -97,18 +99,35 @@ def _register_routers(app: FastAPI):
 
     app.include_router(auth.router, prefix=API_PREFIX)
 
-    # Health check endpoint
+    # Health check endpoint with dependency check
     @app.get("/health", tags=["System"], summary="Health check")
-    async def health_check():
+    async def health_check(supabase: Client = Depends(get_supabase_client)):
         settings = get_settings()
-        return {
+        health_status = {
             "status": "healthy",
             "app": settings.APP_NAME,
             "version": settings.VERSION,
             "environment": settings.APP_ENV,
         }
+        
+        # Check Supabase connection
+        try:
+            # Simple check - try to get session
+            supabase.auth.get_session()
+            health_status["supabase"] = "connected"
+        except Exception as e:
+            health_status["status"] = "unhealthy"
+            health_status["supabase"] = "disconnected"
+            health_status["error"] = str(e)[:100]
+        
+        return health_status
     
     @app.get("/")
     async def root():
-        return {"message": "wellcome to MY-Jarvis-Gua API"}
+        settings = get_settings()
+        return {
+            "message": f"Welcome to {settings.APP_NAME}",
+            "version": settings.VERSION,
+            "docs": "/docs" if not settings.is_production else None
+        }
     
