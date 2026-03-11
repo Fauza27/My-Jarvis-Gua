@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     #OPENAI_API_KEY: str
     
     # Telegram
-    #TELEGRAM_BOT_TOKEN: str
+    TELEGRAM_BOT_TOKEN: str
     
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3001"]
