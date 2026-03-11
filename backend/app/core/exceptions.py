@@ -35,3 +35,11 @@ class ValidationError(AppError):
 class UnauthorizedError(AppError):
     """Raised when user is not authorized (401)."""
     pass
+
+class TelehgramNotLinkedError(AppError):
+    """Raised when user tries to access Telegram features but hasn't linked their account."""
+    pass
+
+class TelegramAlreadyLinkedError(AppError):
+    """Raised when user tries to link Telegram but it's already linked to another account."""
+    pass
