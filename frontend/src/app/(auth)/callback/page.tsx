@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/features/auth/store";
 import { Loader2, AlertCircle } from "lucide-react";
 import Image from "next/image";
+import { verifyToken } from "@/features/auth/api/authApi";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -15,8 +16,6 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        const { supabase } = await import("@/lib/supabase");
-
         // Check for errors in URL
         const errorParam = searchParams.get("error");
         const errorDescription = searchParams.get("error_description");
@@ -30,54 +29,101 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        // Get session from Supabase
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        // Import Supabase client dynamically
+        const { supabase } = await import("@/lib/supabase");
 
-        if (sessionError) {
-          console.error("Session error:", sessionError);
-          setError("Failed to retrieve session");
-          setTimeout(() => router.push("/login"), 3000);
-          return;
-        }
+        // Check if we have a code parameter (PKCE flow from OAuth)
+        const code = searchParams.get("code");
+        
+        if (code) {
+          // PKCE flow - exchange code for session
+          // code_verifier should be in localStorage (created when OAuth was initiated)
+          console.log("Handling PKCE flow with code");
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(
+            window.location.search
+          );
 
-        if (!session) {
-          setError("No active session found");
-          setTimeout(() => router.push("/login"), 3000);
-          return;
-        }
+          if (exchangeError) {
+            console.error("Code exchange error:", exchangeError);
+            setError(exchangeError.message || "Failed to complete authentication");
+            setTimeout(() => router.push("/login"), 3000);
+            return;
+          }
 
-        const { access_token, refresh_token, expires_in } = session;
-        const expiresAt = expires_in 
-          ? Math.floor(Date.now() / 1000) + expires_in
-          : Math.floor(Date.now() / 1000) + 3600;
+          if (!data.session) {
+            setError("No session received after code exchange");
+            setTimeout(() => router.push("/login"), 3000);
+            return;
+          }
 
-        // Verify token with backend (this is the correct approach)
-        try {
-          const { verifyToken } = await import("@/features/auth/api/authApi");
-          const userData = await verifyToken(access_token);
-          
-          const user = {
-            id: userData.user_id,
-            email: userData.email,
-            created_at: new Date().toISOString(),
-            email_confirmed: true,
-          };
+          const { access_token, refresh_token, expires_at } = data.session;
 
-          // Store auth data
-          setAuth(access_token, refresh_token, expiresAt, user);
-          
-          // Redirect to dashboard
-          router.push("/dashboard");
-        } catch (err) {
-          console.error("Token verification failed:", err);
-          console.error("Token:", access_token);
-          console.error("Session user:", session.user);
-          setError(`Failed to verify authentication with server: ${err instanceof Error ? err.message : 'Unknown error'}`);
-          setTimeout(() => router.push("/login"), 3000);
+          // Verify token with backend
+          try {
+            const userData = await verifyToken(access_token);
+            
+            const user = {
+              id: userData.user_id,
+              email: userData.email,
+              created_at: new Date().toISOString(),
+              email_confirmed: true,
+            };
+
+            // Store auth data
+            setAuth(access_token, refresh_token, expires_at || 0, user);
+            
+            // Redirect to dashboard
+            router.push("/dashboard");
+          } catch (verifyError) {
+            console.error("Token verification failed:", verifyError);
+            setError("Failed to verify authentication with server");
+            setTimeout(() => router.push("/login"), 3000);
+          }
+        } else {
+          // Implicit flow - check for tokens in hash or localStorage
+          console.log("Handling implicit flow");
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+          if (sessionError) {
+            console.error("Session error:", sessionError);
+            setError(sessionError.message || "Failed to retrieve session");
+            setTimeout(() => router.push("/login"), 3000);
+            return;
+          }
+
+          if (!session) {
+            setError("No session found. Please try logging in again.");
+            setTimeout(() => router.push("/login"), 3000);
+            return;
+          }
+
+          const { access_token, refresh_token, expires_at } = session;
+
+          // Verify token with backend
+          try {
+            const userData = await verifyToken(access_token);
+            
+            const user = {
+              id: userData.user_id,
+              email: userData.email,
+              created_at: new Date().toISOString(),
+              email_confirmed: true,
+            };
+
+            // Store auth data
+            setAuth(access_token, refresh_token, expires_at || 0, user);
+            
+            // Redirect to dashboard
+            router.push("/dashboard");
+          } catch (verifyError) {
+            console.error("Token verification failed:", verifyError);
+            setError("Failed to verify authentication with server");
+            setTimeout(() => router.push("/login"), 3000);
+          }
         }
       } catch (err) {
         console.error("Auth callback error:", err);
-        setError("An unexpected error occurred");
+        setError(err instanceof Error ? err.message : "An unexpected error occurred");
         setTimeout(() => router.push("/login"), 3000);
       }
     };
