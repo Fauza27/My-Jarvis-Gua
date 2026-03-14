@@ -11,7 +11,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     // Auto-detect session from URL (for both implicit and PKCE flows)
     detectSessionInUrl: true,
-    // Persist session in localStorage
-    persistSession: true,
+    // This app stores auth state in Zustand; avoid duplicate long-lived token storage.
+    persistSession: false,
+    flowType: "implicit",
   },
 });
