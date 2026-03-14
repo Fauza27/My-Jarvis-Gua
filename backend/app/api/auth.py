@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import RedirectResponse
 from supabase import Client
 
 from app.core.config import get_settings
@@ -131,8 +132,25 @@ async def forgot_password(
 async def google_oauth(
     service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Initiate Google OAuth flow.
+    Returns OAuth URL that user should be redirected to.
+    After authorization, Supabase will redirect to frontend callback.
+    """
     settings = get_settings()
     return service.get_oauth_url(
         provider="google",
         redirect_url=settings.auth_redirect_url,
     )
+
+@router.get(
+    "/callback",
+    summary="Handle OAuth callback - NOT USED (handled by frontend)",
+)
+async def oauth_callback_deprecated():
+    """
+    This endpoint is deprecated.
+    OAuth callback is now handled by frontend using Supabase client.
+    Backend only verifies the resulting token.
+    """
+    return {"message": "This endpoint is deprecated. Use frontend callback."}
