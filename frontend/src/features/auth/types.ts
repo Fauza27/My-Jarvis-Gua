@@ -28,5 +28,6 @@ export interface AuthState {
   expiresAt: number | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  hasHydrated: boolean;
   lastUpdate?: number;
 }

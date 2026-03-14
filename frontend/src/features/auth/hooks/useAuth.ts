@@ -8,9 +8,7 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      if (accessToken) {
-        await logoutApi(accessToken);
-      }
+      await logoutApi();
     } catch (error) {
       console.error("Logout error:", error);
     } finally {

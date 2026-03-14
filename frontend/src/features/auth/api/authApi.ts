@@ -22,43 +22,38 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}) => {
     return response;
   } catch (error) {
     clearTimeout(timeoutId);
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Request timeout - please try again');
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Request timeout - please try again");
     }
     throw error;
   }
 };
 
 // Helper to get valid token (with auto-refresh)
-const getValidToken = async (): Promise<string> => {
+export const getValidToken = async (): Promise<string> => {
   const { accessToken, refreshToken: refresh, isTokenExpiringSoon, setAuth, clearAuth } = useAuthStore.getState();
-  
+
   // Check if token is expiring soon
   if (isTokenExpiringSoon() && refresh) {
     try {
       console.log("Token expiring soon, refreshing...");
       const response = await refreshToken(refresh);
-      
+
       // Update store with new tokens
-      setAuth(
-        response.access_token,
-        response.refresh_token,
-        response.expires_at,
-        response.user
-      );
-      
+      setAuth(response.access_token, response.refresh_token, response.expires_at, response.user);
+
       return response.access_token;
     } catch (error) {
       console.error("Token refresh failed:", error);
       // Clear auth and redirect to login
       clearAuth();
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         window.location.href = "/login";
       }
       throw error;
     }
   }
-  
+
   return accessToken || "";
 };
 
@@ -116,14 +111,19 @@ export const forgotPassword = async (email: string): Promise<ForgotPasswordRespo
   return res.json();
 };
 
-export const logout = async (token: string): Promise<void> => {
+export const logout = async (token?: string): Promise<void> => {
+  const resolvedToken = token || (await getValidToken());
+  if (!resolvedToken) {
+    throw new Error("No valid access token available");
+  }
+
   // Call backend logout endpoint
   // Backend will handle Supabase signOut internally
   const res = await fetchWithTimeout(`${BASE_URL}/api/auth/logout`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${resolvedToken}`,
     },
     credentials: "include",
   });
@@ -152,11 +152,16 @@ export const refreshToken = async (refreshToken: string): Promise<LoginResponse>
   return res.json();
 };
 
-export const verifyToken = async (token: string) => {
+export const verifyToken = async (token?: string) => {
+  const resolvedToken = token || (await getValidToken());
+  if (!resolvedToken) {
+    throw new Error("No valid access token available");
+  }
+
   const res = await fetchWithTimeout(`${BASE_URL}/api/auth/verify`, {
     method: "GET",
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${resolvedToken}`,
     },
     credentials: "include",
   });

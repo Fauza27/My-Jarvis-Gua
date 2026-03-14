@@ -5,7 +5,6 @@ import { useState } from "react";
 import { RegisterInput, registerSchema } from "../validations/authSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useAuthStore } from "../store";
 import { register as registerUser } from "../api/authApi";
 import { mapServerError } from "../utils";
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, UserPlus, Mail, Lock, Check, X } from "lucide-react";
@@ -56,13 +55,7 @@ function PasswordStrengthBar({ password }: { password: string }) {
               ${strength >= level ? config.color : "bg-muted"}`}
           />
         ))}
-        <span className={`text-xs ml-2 font-medium ${
-          strength === 1 || strength === 2 ? "text-red-600" : 
-          strength === 3 ? "text-yellow-600" : 
-          strength >= 4 ? "text-green-600" : "text-muted-foreground"
-        }`}>
-          {config.label}
-        </span>
+        <span className={`text-xs ml-2 font-medium ${strength === 1 || strength === 2 ? "text-red-600" : strength === 3 ? "text-yellow-600" : strength >= 4 ? "text-green-600" : "text-muted-foreground"}`}>{config.label}</span>
       </div>
 
       {/* Checklist requirements */}
@@ -84,7 +77,6 @@ export function RegisterForm() {
   const [formState, setFormState] = useState<FormState>("idle");
   const [serverError, setServerError] = useState<string | null>(null);
   const [isEmailSent, setIsEmailSent] = useState(false);
-  const setAuth = useAuthStore((state) => state.setAuth);
 
   const {
     register,
@@ -237,7 +229,7 @@ export function RegisterForm() {
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
-        
+
         {errors.password && (
           <p id="password-error" role="alert" className="flex items-center gap-1.5 text-xs text-red-600 mt-1">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
