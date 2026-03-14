@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 
 from app.core.application import create_app
@@ -74,7 +74,7 @@ class TestRegisterEndpoint:
         try:
             response = client.post("/api/auth/register", json={
                 "email": "budi@test.com",
-                "password": "Password123",
+                "password": "Password123!",
             })
 
             # Verifikasi HTTP status code
@@ -99,7 +99,7 @@ class TestRegisterEndpoint:
         """
         response = client.post("/api/auth/register", json={
             "email": "ini-bukan-email",
-            "password": "Password123",
+            "password": "Password123!",
         })
 
         assert response.status_code == 422
@@ -137,7 +137,7 @@ class TestRegisterEndpoint:
         try:
             response = client.post("/api/auth/register", json={
                 "email": "sudah@ada.com",
-                "password": "Password123",
+                "password": "Password123!",
             })
 
             assert response.status_code == 409
@@ -169,7 +169,7 @@ class TestRegisterEndpoint:
         try:
             response = client.post("/api/auth/register", json={
                 "email": "budi@test.com",
-                "password": "SuperSecret123",
+                "password": "SuperSecret123!",
             })
 
             response_text = response.text.lower()

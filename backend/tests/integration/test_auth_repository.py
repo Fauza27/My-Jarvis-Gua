@@ -130,7 +130,7 @@ class TestAuthRepositoryWithControlledMock:
         from supabase import AuthApiError
 
         mock_client = MagicMock()
-        mock_client.auth.sign_out.side_effect = AuthApiError(
+        mock_client.auth.admin.sign_out.side_effect = AuthApiError(
             message="Session not found",
             code=400,
             status=400,
@@ -140,7 +140,7 @@ class TestAuthRepositoryWithControlledMock:
 
         # Ini TIDAK boleh raise exception
         try:
-            repo.logout()  # Harus silent fail
+            repo.logout("expired.jwt.token")  # Harus silent fail
         except Exception as e:
             pytest.fail(f"logout() tidak seharusnya raise exception: {e}")
 

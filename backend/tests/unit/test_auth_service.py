@@ -178,11 +178,13 @@ class TestLogoutService:
         # logout() tidak mengembalikan nilai — ini valid di Python
         mock_auth_repo.logout.return_value = None
         service = AuthService(auth_repo=mock_auth_repo)
+        access_token = "valid.jwt.token"
 
-        result = service.logout()
+        result = service.logout(access_token=access_token)
 
         assert isinstance(result, MessageOut)
         assert "logout" in result.message.lower()
+        mock_auth_repo.logout.assert_called_once_with(access_token)
 
     def test_logout_selalu_berhasil_meski_repo_error(self, mock_auth_repo):
         """
@@ -205,11 +207,11 @@ class TestLogoutService:
         
         # Untuk sekarang, kita verifikasi bahwa repo.logout() dipanggil
         try:
-            service.logout()
+            service.logout(access_token="expired.jwt.token")
         except Exception:
             pass  # Expected behavior saat ini
         
-        mock_auth_repo.logout.assert_called_once()
+        mock_auth_repo.logout.assert_called_once_with("expired.jwt.token")
 
 
 # =============================================================================
