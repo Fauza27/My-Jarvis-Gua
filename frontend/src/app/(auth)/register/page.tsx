@@ -4,7 +4,6 @@ import { RegisterForm } from "@/features/auth/components/RegisterForm";
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { getGoogleOAuthUrl } from "@/features/auth/api/authApi";
 import { Loader2 } from "lucide-react";
 
 export default function RegisterPage() {
@@ -13,10 +12,23 @@ export default function RegisterPage() {
   const handleGoogleRegister = async () => {
     try {
       setIsGoogleLoading(true);
-      const { url } = await getGoogleOAuthUrl();
-      window.location.href = url;
+      // Use Supabase client directly to initiate OAuth
+      // This ensures code_verifier is created and stored in localStorage
+      const { supabase } = await import("@/lib/supabase");
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/callback`,
+        },
+      });
+      
+      if (error) {
+        console.error("OAuth error:", error);
+        setIsGoogleLoading(false);
+      }
+      // If successful, user will be redirected to Google
     } catch (error) {
-      console.error("Failed to get Google OAuth URL:", error);
+      console.error("Failed to initiate Google OAuth:", error);
       setIsGoogleLoading(false);
     }
   };
