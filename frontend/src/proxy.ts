@@ -1,16 +1,25 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+// const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password", "/callback", "/reset-password"] as const;
+const PROTECTED_ROUTES = ["/dashboard", "/profile"] as const;
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Public routes that don't require authentication
-  const publicRoutes = ["/", "/login", "/register", "/forgot-password"];
-  const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith("/auth/"));
+  const isLoggedIn = request.cookies.has("auth_session");
+  const isProtected = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
+  const isAuthRoute = ["/login", "/register"].includes(pathname);
 
-  // Check if user has auth token in localStorage (we'll check this on client side)
-  // For now, we'll just allow all routes and let client-side handle auth
-  // In production, you might want to use cookies for server-side auth check
+  if (isProtected && !isLoggedIn) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("next", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  if (isAuthRoute && isLoggedIn) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
 
   return NextResponse.next();
 }

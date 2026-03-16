@@ -23,6 +23,16 @@ const initialState: AuthState = {
   lastUpdate: undefined,
 };
 
+function setAuthCookie(expiresAt: number) {
+  const maxAge = expiresAt - Math.floor(Date.now() / 1000);
+  if (maxAge <= 0) return;
+  document.cookie = ["auth_session=1", `max-age=${maxAge}`, "path=/", "samesite=lax"].join("; ");
+}
+
+function clearAuthCookie() {
+  document.cookie = "auth_session=; max-age=0; path=/";
+}
+
 export const useAuthStore = create<AuthState & AuthActions>()(
   persist(
     (set, get) => ({
@@ -32,24 +42,18 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         const timestamp = Date.now();
         const state = get();
 
-        // Prevent race condition - only update if newer
         if (state.lastUpdate && timestamp < state.lastUpdate) {
-          console.warn("Ignoring stale auth update", {
-            current: state.lastUpdate,
-            attempted: timestamp,
-          });
+          console.warn("Ignoring stale auth update");
           return;
         }
 
-        // Validate expiration
         const currentTime = Math.floor(Date.now() / 1000);
         if (!Number.isFinite(expiresAt) || expiresAt <= 0) {
-          console.error("Attempted to set auth with invalid expiration");
+          console.error("Invalid token expiration");
           return;
         }
-
         if (expiresAt <= currentTime) {
-          console.error("Attempted to set expired token");
+          console.error("Token sudah expired, tidak disimpan");
           return;
         }
 
@@ -62,9 +66,15 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           hasHydrated: true,
           lastUpdate: timestamp,
         });
+
+        setAuthCookie(expiresAt);
       },
 
-      clearAuth: () => set({ ...initialState, hasHydrated: true }),
+      clearAuth: () => {
+        set({ ...initialState, hasHydrated: true });
+
+        clearAuthCookie();
+      },
 
       markHydrated: () => set({ hasHydrated: true }),
 
@@ -73,20 +83,16 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       setLoading: (isLoading) => set({ isLoading }),
 
       isTokenExpired: () => {
-        const state = get();
-        if (!state.expiresAt) return true;
-
-        const currentTime = Math.floor(Date.now() / 1000);
-        return currentTime >= state.expiresAt;
+        const { expiresAt } = get();
+        if (!expiresAt) return true;
+        return Math.floor(Date.now() / 1000) >= expiresAt;
       },
 
       isTokenExpiringSoon: () => {
-        const state = get();
-        if (!state.expiresAt) return true;
-
-        const currentTime = Math.floor(Date.now() / 1000);
+        const { expiresAt } = get();
+        if (!expiresAt) return true;
         const fiveMinutes = 300;
-        return currentTime >= state.expiresAt - fiveMinutes;
+        return Math.floor(Date.now() / 1000) >= expiresAt - fiveMinutes;
       },
     }),
     {
@@ -102,6 +108,15 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       }),
       onRehydrateStorage: () => (state) => {
         state?.markHydrated();
+
+        if (state?.expiresAt && state.isAuthenticated) {
+          const currentTime = Math.floor(Date.now() / 1000);
+          if (state.expiresAt > currentTime) {
+            setAuthCookie(state.expiresAt);
+          } else {
+            state.clearAuth();
+          }
+        }
       },
     },
   ),

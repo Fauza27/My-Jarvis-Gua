@@ -117,8 +117,6 @@ export const logout = async (token?: string): Promise<void> => {
     throw new Error("No valid access token available");
   }
 
-  // Call backend logout endpoint
-  // Backend will handle Supabase signOut internally
   const res = await fetchWithTimeout(`${BASE_URL}/api/auth/logout`, {
     method: "POST",
     headers: {
@@ -130,6 +128,12 @@ export const logout = async (token?: string): Promise<void> => {
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: "Logout failed" }));
+    const detail = String(error.detail || "").toLowerCase();
+
+    if (res.status === 401 && (detail.includes("invalid") || detail.includes("expired") || detail.includes("token"))) {
+      return;
+    }
+
     throw new Error(error.detail || "Logout failed");
   }
 };
@@ -168,23 +172,6 @@ export const verifyToken = async (token?: string) => {
 
   if (!res.ok) {
     throw new Error("Token verification failed");
-  }
-
-  return res.json();
-};
-
-export const getGoogleOAuthUrl = async (): Promise<{ url: string; provider: string }> => {
-  const res = await fetchWithTimeout(`${BASE_URL}/api/auth/google`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-  });
-
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: "Failed to get OAuth URL" }));
-    throw new Error(error.detail || "Failed to get OAuth URL");
   }
 
   return res.json();
