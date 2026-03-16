@@ -8,7 +8,6 @@ import { AlertCircle, CheckCircle2, Loader2, Mail, Send } from "lucide-react";
 import { ForgotPasswordInput, forgotPasswordSchema } from "../validations/authSchema";
 import { forgotPassword } from "../api/authApi";
 import { mapServerError } from "../utils";
-import Link from "next/link";
 
 type FormState = "idle" | "loading" | "error" | "success";
 
@@ -79,9 +78,7 @@ export function ForgotPasswordForm() {
           <CheckCircle2 className="w-5 h-5 shrink-0 text-green-500" />
           <div className="space-y-1">
             <p className="font-medium">Email Sent!</p>
-            <p className="text-green-600">
-              We&apos;ve sent a password reset link to your email. Please check your inbox and follow the instructions.
-            </p>
+            <p className="text-green-600">We&apos;ve sent a password reset link to your email. Please check your inbox and follow the instructions.</p>
           </div>
         </div>
       )}
@@ -169,7 +166,7 @@ export function ForgotPasswordForm() {
           >
             Back to Login
           </button>
-          
+
           <button
             type="button"
             onClick={() => {
