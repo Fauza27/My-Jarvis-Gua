@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,23 +8,43 @@ import { z } from "zod";
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, Lock } from "lucide-react";
 import Image from "next/image";
 
-const resetPasswordSchema = z.object({
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/\d/, "Password must contain at least one number")
-    .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character"),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+      .regex(/\d/, "Password must contain at least one number")
+      .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
+function ResetPasswordFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md bg-card rounded-lg p-8 text-center">
+        <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
+      </div>
+    </div>
+  );
+}
+
 export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<ResetPasswordFallback />}>
+      <ResetPasswordContent />
+    </Suspense>
+  );
+}
+
+function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
@@ -49,11 +69,7 @@ export default function ResetPasswordPage() {
     const hashErrorDescription = hashParams.get("error_description");
 
     if (errorParam || hashError) {
-      setError(
-        errorDescription || 
-        hashErrorDescription || 
-        "Reset password link is invalid or has expired. Please request a new one."
-      );
+      setError(errorDescription || hashErrorDescription || "Reset password link is invalid or has expired. Please request a new one.");
     }
   }, [searchParams]);
 
@@ -97,21 +113,12 @@ export default function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="w-full max-w-md bg-card rounded-lg p-8 text-center">
           <div className="inline-flex items-center justify-center mb-4">
-            <Image 
-              src="/Login-Head.png" 
-              alt="My Jarvis Gua Logo" 
-              width={64} 
-              height={64} 
-              className="rounded-xl" 
-            />
+            <Image src="/Login-Head.png" alt="My Jarvis Gua Logo" width={64} height={64} className="rounded-xl" />
           </div>
           <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-500" />
           <h1 className="text-2xl font-bold text-foreground mb-2">Reset Password Failed</h1>
           <p className="text-muted-foreground mb-4">{error}</p>
-          <button
-            onClick={() => router.push("/forgot-password")}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
-          >
+          <button onClick={() => router.push("/forgot-password")} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90">
             Request New Link
           </button>
         </div>
@@ -124,13 +131,7 @@ export default function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="w-full max-w-md bg-card rounded-lg p-8 text-center">
           <div className="inline-flex items-center justify-center mb-4">
-            <Image 
-              src="/Login-Head.png" 
-              alt="My Jarvis Gua Logo" 
-              width={64} 
-              height={64} 
-              className="rounded-xl" 
-            />
+            <Image src="/Login-Head.png" alt="My Jarvis Gua Logo" width={64} height={64} className="rounded-xl" />
           </div>
           <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-green-500" />
           <h1 className="text-2xl font-bold text-foreground mb-2">Password Reset Successful</h1>
@@ -145,13 +146,7 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-md bg-card rounded-lg p-8">
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center mb-4">
-            <Image 
-              src="/Login-Head.png" 
-              alt="My Jarvis Gua Logo" 
-              width={64} 
-              height={64} 
-              className="rounded-xl" 
-            />
+            <Image src="/Login-Head.png" alt="My Jarvis Gua Logo" width={64} height={64} className="rounded-xl" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Reset Your Password</h1>
           <p className="text-sm text-muted-foreground mt-2">Enter your new password below</p>
@@ -181,12 +176,7 @@ export default function ResetPasswordPage() {
                   ${errors.password ? "border-red-400 bg-red-50 focus:ring-red-500" : "border-input bg-background focus:ring-ring"}
                 `}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                disabled={isLoading}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded text-foreground hover:text-muted-foreground"
-              >
+              <button type="button" onClick={() => setShowPassword(!showPassword)} disabled={isLoading} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded text-foreground hover:text-muted-foreground">
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
