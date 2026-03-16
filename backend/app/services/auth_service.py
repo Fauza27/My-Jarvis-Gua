@@ -57,11 +57,3 @@ class AuthService:
         """Request password reset email."""
         self._auth_repo.request_password_reset(email, redirect_url)
         return MessageOut(message="If email is registered, password reset link will be sent.")
-    
-    def get_oauth_url(self, provider: str, redirect_url: str) -> dict:
-        """Get OAuth URL for social login."""
-        oauth_response = self._auth_repo.get_oauth_url(provider, redirect_url)
-        return {
-            "url": oauth_response.url,
-            "provider": oauth_response.provider,
-        }

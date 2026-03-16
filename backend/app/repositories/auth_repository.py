@@ -95,15 +95,3 @@ class AuthRepository:
         except AuthApiError:
             raise InvalidTokenError("Token is invalid or expired.")
     
-    def get_oauth_url(self, provider: str, redirect_url: str) -> object:
-        """Get OAuth URL for social login (Google, GitHub, etc.)."""
-        try:
-            response = self._client.auth.sign_in_with_oauth({
-                "provider": provider,
-                "options": {
-                    "redirect_to": redirect_url,
-                }
-            })
-            return response
-        except AuthApiError as e:
-            raise AuthenticationError(f"Failed to get OAuth URL: {e.message}")

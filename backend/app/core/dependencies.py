@@ -1,6 +1,5 @@
 from typing import Annotated
 import jwt
-import time
 import logging
 
 from fastapi import Depends, Header
@@ -16,103 +15,69 @@ logger = logging.getLogger(__name__)
 def get_app_settings() -> Settings:
     return get_settings()
 
+def _extract_bearer_token(authorization: str | None) -> str:
+    if not authorization:
+        raise AuthenticationError("authorization not found in header")
+    if not authorization.startswith("Bearer "):
+        raise AuthenticationError("Invalid authorization header format")
+    token = authorization.removeprefix("Bearer ").strip()
+    if not token:
+        raise AuthenticationError("Token is missing")
+    return token
+
+def _verify_jwt_locally(token: str, settings: Settings) -> UserOut:
+    try:
+        payload = jwt.decode(
+            token, 
+            settings.SUPABASE_JWT_SECRET,
+            algorithms=["HS256"],
+            audience="authenticated",
+        )
+        return UserOut(
+            id=payload["sub"],
+            email=payload.get("email", ""),
+            created_at=payload.get("created_at", ""),
+        )
+    except jwt.ExpiredSignatureError:
+        raise InvalidTokenError("Token expired")
+    except jwt.InvalidAudienceError:
+        raise InvalidTokenError("Invalid token audience")
+    except jwt.PyJWTError as e:
+        logger.error(f"JWT verification failed: {str(e)[:100]}")
+        raise InvalidTokenError("Invalid token")
+
+
 async def get_current_user(
     authorization: Annotated[str, Header()] = None,
     admin_supabase: Client = Depends(get_admin_supabase_client),
-):
+) -> UserOut:
     if not authorization:
         raise AuthenticationError("authorization not found in header")
     
     if not authorization.startswith("Bearer "):
         raise AuthenticationError("Invalid authorization header format")
     
-    token = authorization.removeprefix("Bearer ").strip()
+    token = _extract_bearer_token(authorization)
     
     if not token:
         raise AuthenticationError("Token is missing")
     
     try:
-        # Try to get user from Supabase first
         response = admin_supabase.auth.get_user(token)
         return response.user
-    except AuthApiError as auth_error:
-        error_msg = str(auth_error.message).lower()
-
-        if (
-            "invalid" in error_msg
-            or "expired" in error_msg
-            or "jwt" in error_msg
-            or "token" in error_msg
-        ):
+    except AuthApiError as e:
+        msg = str(e.message).lower()
+        if any(kw in msg for kw in ["invalid", "expired", "jwt", "token"]):
             raise InvalidTokenError("Invalid or expired token")
-
-        logger.error("Supabase auth API failed to validate token: %s", str(auth_error.message)[:100])
-        raise InvalidTokenError("Unable to validate token at this time")
-    except Exception as provider_error:
-        # If get_user fails, verify JWT manually with SIGNATURE CHECK
-        logger.info(f"get_user failed, trying JWT verification: {str(provider_error)[:100]}")
-        
-        try:
-            settings = get_settings()
-            
-            # CRITICAL: VERIFY JWT signature
-            decoded = jwt.decode(
-                token,
-                settings.SUPABASE_JWT_SECRET,
-                algorithms=["HS256", "ES256"],  # Supabase uses both
-                audience="authenticated",
-                options={
-                    "verify_signature": True,  # ✅ MUST BE TRUE
-                    "verify_exp": True,
-                    "verify_aud": True,
-                }
-            )
-            
-            # Additional validation
-            current_time = time.time()
-            if decoded.get("exp", 0) < current_time:
-                raise InvalidTokenError("Token expired")
-            
-            if decoded.get("aud") != "authenticated":
-                raise InvalidTokenError("Invalid audience")
-            
-            # Create user object from verified JWT
-            user = UserOut(
-                id=decoded.get("sub", ""),
-                email=decoded.get("email", ""),
-                created_at=decoded.get("created_at", ""),
-                email_confirmed=True
-            )
-            
-            logger.info(f"JWT verified successfully for user: {user.id}")
-            return user
-            
-        except jwt.ExpiredSignatureError:
-            logger.warning("Token expired")
-            raise InvalidTokenError("Token expired")
-        except jwt.InvalidAudienceError:
-            logger.warning("Invalid token audience")
-            raise InvalidTokenError("Invalid token audience")
-        except jwt.InvalidSignatureError:
-            logger.error("Invalid token signature - possible attack!")
-            raise InvalidTokenError("Invalid token signature")
-        except jwt.DecodeError:
-            logger.error("Invalid token format")
-            raise InvalidTokenError("Invalid token format")
-        except Exception as jwt_error:
-            logger.error(f"JWT verification failed: {str(jwt_error)[:100]}")
-            raise InvalidTokenError("Invalid or expired token") from provider_error
+        logger.warning("Supabase auth unavailable, using local JWT")
     
+    settings = get_settings()
+    return _verify_jwt_locally(token, settings)
+           
 async def get_access_token(
     authorization: Annotated[str, Header()] = None,
 ) -> str:
-    if not authorization or not authorization.startswith("Bearer "):
-        raise AuthenticationError("authorization not found in header")
-    
-    token = authorization.removeprefix("Bearer ").strip()
-    if not token:
-        raise AuthenticationError("Token is missing")
-    return token
+    return _extract_bearer_token(authorization)
 
 # Type Aliases for better readability
 CurrentUser = Annotated[object, Depends(get_current_user)]
