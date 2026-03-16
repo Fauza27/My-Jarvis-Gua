@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { RegisterInput, registerSchema } from "../validations/authSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { register as registerUser } from "../api/authApi";
 import { mapServerError } from "../utils";
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, UserPlus, Mail, Lock, Check, X } from "lucide-react";
@@ -76,12 +76,11 @@ export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [formState, setFormState] = useState<FormState>("idle");
   const [serverError, setServerError] = useState<string | null>(null);
-  const [isEmailSent, setIsEmailSent] = useState(false);
 
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -93,16 +92,19 @@ export function RegisterForm() {
     },
   });
 
-  const passwordValue = watch("password", "");
+  const passwordValue = useWatch({
+    control,
+    name: "password",
+    defaultValue: "",
+  });
 
   const onSubmit = async (data: RegisterInput) => {
     setFormState("loading");
     setServerError(null);
 
     try {
-      const response = await registerUser(data.email, data.password);
+      await registerUser(data.email, data.password);
       setFormState("success");
-      setIsEmailSent(true);
       await new Promise((resolve) => setTimeout(resolve, 800));
       router.push("/login");
     } catch (error) {
