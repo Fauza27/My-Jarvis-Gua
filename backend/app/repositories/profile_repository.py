@@ -11,7 +11,9 @@ class ProfileRepository:
     TABLE = "profiles"
 
     def __init__(self, client: Client):
+        # Keep both names for backward compatibility with existing call sites.
         self.client = client
+        self._client = client
     
     def find_by_user_id(self, user_id: str) -> dict:
         """
