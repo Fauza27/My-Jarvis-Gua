@@ -4,25 +4,25 @@ from datetime import datetime
 
 class ExpenseBase(BaseModel):
     
-    @field_validator('amount')
+    @field_validator('amount', check_fields=False)
     def validate_amount(cls, value):
         if value is not None and value <= 0:
             raise ValueError('Amount must be greater than zero')
         return round(value, 2) if value is not None else value
 
-    @field_validator('category', 'subcategory', 'payment_method')
+    @field_validator('category', 'subcategory', 'payment_method', check_fields=False)
     def normalize_category_fields(cls, value):
         if value:
             return value.strip().lower()
         return value
 
-    @field_validator('description')
+    @field_validator('description', check_fields=False)
     def normalize_description(cls, value):
         if value:
             return value.strip()
         return value
 
-    @field_validator("transaction_date")
+    @field_validator("transaction_date", check_fields=False)
     def validate_date_format(cls, v):
         if v is None:
             return v
