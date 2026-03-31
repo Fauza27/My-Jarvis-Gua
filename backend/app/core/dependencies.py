@@ -69,7 +69,17 @@ async def get_current_user(
         msg = str(e.message).lower()
         if any(kw in msg for kw in ["invalid", "expired", "jwt", "token"]):
             raise InvalidTokenError("Invalid or expired token")
-        logger.warning("Supabase auth unavailable, using local JWT")
+        logger.warning("Supabase auth API error, using local JWT: %s", str(e)[:100])
+    except (ConnectionError, OSError) as e:
+        logger.warning("Supabase unreachable (network error), using local JWT: %s", str(e)[:100])
+    except Exception as e:
+        # Catch httpx.ConnectError and other transport errors without importing httpx
+        error_type = type(e).__name__
+        if "Connect" in error_type or "Timeout" in error_type or "Network" in error_type:
+            logger.warning("Supabase connection failed (%s), using local JWT: %s", error_type, str(e)[:100])
+        else:
+            logger.error("Unexpected error during Supabase auth: %s - %s", error_type, str(e)[:100])
+            raise
     
     settings = get_settings()
     return _verify_jwt_locally(token, settings)
