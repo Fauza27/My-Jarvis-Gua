@@ -1,28 +1,27 @@
 import secrets
-import string
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from app.repositories.profile_repository import ProfileRepository
-from app.models.profile import UpdateProfileRequest, ProfileOut, GenerateConnectCodeResponse, AuthenticationError
+from app.models.profile import GenerateConnectCodeResponse, ProfileOut, UpdateProfileRequest
 from app.models.auth import MessageOut
-from app.core.exceptions import NotFoundError, ValidationError
+from app.core.exceptions import AuthenticationError, NotFoundError, ValidationError
 
 CODE_PREFIX = "MYJARVIS-"
 CODE_LENGTH = 6
 CODE_EXPIRY_MINUTES = 10
 
-def _generate_code( ) -> str:
-    """generate random code for linking telegram account, with prefix and 6 random uppercase letters or digits."""
-    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" # exclude confusing characters like I, O, 1, 0
-    random_part = ''.join(secrets.choice(alphabet) for _ in range(CODE_LENGTH))
+def _generate_code() -> str:
+    """Generate secure one-time code for Telegram linking."""
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    random_part = "".join(secrets.choice(alphabet) for _ in range(CODE_LENGTH))
     return f"{CODE_PREFIX}{random_part}"
 
 class ProfileService:
     """manage all usecase related to profile"""
 
     def __init__(self, profile_repo: ProfileRepository):
-        self.profile_repo = profile_repo
+        self._profile_repo = profile_repo
     
     def get_profile(self, user_id: str) -> ProfileOut:
         """
@@ -32,7 +31,7 @@ class ProfileService:
             NotFoundError: if profile not found
         """
         try:
-            profile_data = self.profile_repo.find_by_user_id(user_id)
+            profile_data = self._profile_repo.find_by_user_id(user_id)
             return ProfileOut.from_db(profile_data)
         except NotFoundError:
             raise
@@ -47,7 +46,7 @@ class ProfileService:
         """
         try:
             # check if profile exist
-            self.profile_repo.find_by_user_id(user_id)
+            self._profile_repo.find_by_user_id(user_id)
             # validate update data
             try:
                 update_request_dict = update_request.to_update_dict()
@@ -61,7 +60,7 @@ class ProfileService:
             update_request_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
             
             # update profile data
-            updated_profile_data = self.profile_repo.update(user_id, update_request_dict)
+            updated_profile_data = self._profile_repo.update(user_id, update_request_dict)
             return ProfileOut.from_db(updated_profile_data)
         except NotFoundError:
             raise
@@ -110,7 +109,7 @@ class ProfileService:
 
         every time generate new code, it will override the previous code.
 
-        bussiness rule:
+        business rule:
         1. code must be unique (no other user have the same code, even if the code is expired)
         2. code must have expiry time (after expiry time, the code is invalid)
         3. format of code is "MYJARVIS-" + 6 random uppercase letters or digits
@@ -131,7 +130,7 @@ class ProfileService:
     
     def verify_and_link_telegram(
         self,
-        code:str,
+        code: str,
         telegram_chat_id: int,
     ) -> MessageOut:
         """
@@ -151,10 +150,7 @@ class ProfileService:
         profile = self._profile_repo.find_by_connect_code(normalized_code)
 
         if not profile:
-            raise AuthenticationError(
-                "Invalid code",
-                "generate a new code from web app and try again"
-            )
+            raise AuthenticationError("Invalid or expired connect code")
         
         expires_at_str = profile.get("connect_code_expires_at")
         if expires_at_str:
@@ -165,15 +161,9 @@ class ProfileService:
                 now = datetime.now(timezone.utc)
 
                 if now > expires_at:
-                    raise AuthenticationError(
-                        "Code has expired",
-                        "generate a new code from web app and try again"
-                    )
+                    raise AuthenticationError("Invalid or expired connect code")
             except ValueError:
-                raise AuthenticationError(
-                    "Invalid code format",
-                    "generate a new code from web app and try again"
-                )
+                raise AuthenticationError("Invalid or expired connect code")
 
         # link telegram account and invalidate the code
         self._profile_repo.consume_connect_code(
