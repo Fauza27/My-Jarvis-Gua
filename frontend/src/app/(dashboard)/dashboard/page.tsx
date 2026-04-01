@@ -3,6 +3,7 @@
 import { useAuthStore } from "@/features/auth/store";
 import { useRouter } from "next/navigation";
 import { logout } from "@/features/auth/api/authApi";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -39,6 +40,15 @@ export default function DashboardPage() {
       <button onClick={handleLogout} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
         Logout
       </button>
+
+      <div className="flex flex-wrap gap-4">
+        <Link href="/dashboard/expenses" className="inline-flex px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          Buka Expense Tracker
+        </Link>
+        <Link href="/dashboard/profile" className="inline-flex px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+          Buka Profile (Connect Telegram)
+        </Link>
+      </div>
     </div>
   );
 }
