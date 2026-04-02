@@ -1,13 +1,16 @@
 WELCOME = """
-👋 *Halo, {first_name}!*
+👋 *Halo, {first_name}\!*
  
 Selamat datang di *My Jarvis Gua Bot* — Personal asisten kamu di Telegram\!
  
 Untuk mulai, hubungkan akun kamu terlebih dahulu dengan perintah:
-👉 /connect
+👉 `/connect <kode>`
+
+Ambil kode dari web app:
+Profile → Hubungkan Telegram → Generate Kode
  
 Sudah punya akun? Langsung connect\!
-Belum punya? Daftar dulu di [My-Jarvis-Gua\.com](http://localhost:3000)
+Belum punya? Daftar dulu di [My\-Jarvis\-Gua\.com](http://localhost:3000)
 """.strip()
  
 ALREADY_CONNECTED = """
@@ -21,18 +24,22 @@ HELP_TEXT = """
 📖 *Panduan Bot*
  
 *Koneksi Akun:*
-/connect — Hubungkan akun
+/connect \\<kode\\> — Hubungkan akun via kode
 /disconnect — Putus koneksi akun
  
-*Manajemen Task:*
-/addtask — Tambah task baru
-/list — Lihat semua task aktif
-/done — Tandai task selesai
-/stats — Lihat statistik task
- 
+*Money Tracker:*
+/addexpense — Tambah transaksi baru
+/list — Lihat daftar transaksi
+/stats — Lihat ringkasan keuangan
+
 *Profil:*
 /profile — Lihat profil kamu
 /editprofile — Edit nama dan bio
+  
+Saat tambah transaksi, data utama yang dibutuhkan:
+• Nominal
+• Tipe \\(expense/income\\)
+• Kategori
  
 *Lainnya:*
 /help — Tampilkan bantuan ini
@@ -41,97 +48,107 @@ HELP_TEXT = """
  
 # ── Connect Flow ──────────────────────────────────────────────────────────────
  
-ASK_EMAIL = """
-📧 *Hubungkan Akun Taskly*
- 
-Masukkan *email* akun Taskly kamu:
- 
-_Ketik /cancel untuk batalkan_
-""".strip()
- 
-ASK_PASSWORD = """
-🔑 Masukkan *password* akun Taskly kamu:
- 
-_Pesan password kamu akan segera dihapus untuk keamanan_
+ASK_CONNECT_CODE = """
+🔗 *Hubungkan Akun Telegram*
+
+Gunakan format berikut:
+`/connect MYJARVIS-AB12CD`
+
+Ambil kode dari web app di menu Profile\.
 """.strip()
  
 CONNECT_SUCCESS = """
 ✅ *Berhasil terhubung\!*
  
-Halo, *{display_name}*\! Akun Telegram kamu sekarang terhubung dengan Taskly\.
+Halo, *{display_name}*\! Akun Telegram kamu sekarang terhubung dengan My\-Jarvis\-Gua\.
  
-Gunakan /addtask untuk mulai tambah tugas, atau /list untuk melihat task yang ada\.
+Gunakan /addexpense untuk mencatat transaksi, atau /list untuk melihat riwayat transaksi\.
 """.strip()
- 
-CONNECT_FAILED_WRONG_CREDS = """
-❌ *Login gagal\!*
- 
-Email atau password salah\. Silakan coba lagi dengan /connect\.
-""".strip()
- 
-CONNECT_FAILED_EMAIL_NOT_CONFIRMED = """
-⚠️ *Email belum dikonfirmasi\!*
- 
-Cek inbox email kamu dan klik link konfirmasi terlebih dahulu\.
-Setelah itu, coba /connect lagi\.
+
+CONNECT_FAILED_INVALID_CODE = """
+❌ *Kode tidak valid atau sudah kedaluwarsa*
+
+Generate kode baru di web app, lalu coba lagi dengan:
+`/connect MYJARVIS-XXXXXX`
 """.strip()
  
 DISCONNECT_SUCCESS = """
 🔌 *Akun berhasil diputus*
  
-Akun Telegram kamu tidak lagi terhubung dengan Taskly\.
+Akun Telegram kamu tidak lagi terhubung dengan My\-Jarvis\-Gua\.
 Gunakan /connect untuk menghubungkan kembali\.
 """.strip()
  
 DISCONNECT_NOT_CONNECTED = """
-ℹ️ Akun Telegram kamu belum terhubung dengan Taskly\.
+ℹ️ Akun Telegram kamu belum terhubung dengan My\-Jarvis\-Gua\.
 """.strip()
  
-# ── Add Task Flow ─────────────────────────────────────────────────────────────
+# ── Add Expense Flow ──────────────────────────────────────────────────────────
  
-ASK_TASK_TITLE = """
-📝 *Tambah Task Baru*
+ASK_EXPENSE_AMOUNT = """
+💸 *Tambah Transaksi Baru*
  
-Apa *judul* task kamu?
+Masukkan *nominal* transaksi kamu \\(angka saja\\)\.
+
+Contoh: `15000` atau `25000.50`
  
 _Ketik /cancel untuk batalkan_
 """.strip()
- 
-ASK_TASK_DATE = """
-📅 Kapan *deadline*\-nya?
- 
-Format: `YYYY\-MM\-DD` \(contoh: `2025\-03\-31`\)
-Atau ketik /skip jika tidak ada deadline\.
+
+ASK_EXPENSE_TYPE = """
+🧭 Pilih *tipe transaksi*:
+
+• `expense` \\(pengeluaran\\)
+• `income` \\(pemasukan\\)
+""".strip()
+
+ASK_EXPENSE_CATEGORY = """
+🏷️ Masukkan *kategori* transaksi:
+
+Contoh: `makanan`, `transport`, `gaji`, `tagihan`
+""".strip()
+
+ASK_EXPENSE_DESCRIPTION = """
+📝 Masukkan *deskripsi* transaksi \\(opsional\\)\.
+
+Ketik /skip jika tidak ada deskripsi\.
 """.strip()
  
-TASK_CREATED = """
-✅ *Task berhasil dibuat\!*
+ASK_EXPENSE_DATE = """
+📅 Kapan *tanggal transaksi*\\-nya?
+ 
+Format: `YYYY-MM-DD` \\(contoh: `2025-03-31`\\)
+Atau ketik /skip jika pakai tanggal hari ini\.
+""".strip()
+ 
+EXPENSE_CREATED = """
+✅ *Transaksi berhasil disimpan\!*
  
 📌 *{title}*
 {date_line}
  
-Gunakan /list untuk melihat semua task\.
+Gunakan /list untuk melihat semua transaksi\.
 """.strip()
  
-TASK_CREATED_DATE_LINE = "📅 Deadline: {due_date}"
-TASK_CREATED_NO_DATE_LINE = "📅 Tidak ada deadline"
+EXPENSE_CREATED_DATE_LINE = "📅 Tanggal transaksi: {due_date}"
+EXPENSE_CREATED_NO_DATE_LINE = "📅 Tanggal transaksi: Hari ini"
  
-# ── List Tasks ────────────────────────────────────────────────────────────────
+# ── List Expenses ─────────────────────────────────────────────────────────────
  
-NO_TASKS = """
-📋 *Belum ada task aktif*
+NO_EXPENSES = """
+📋 *Belum ada data transaksi*
  
-Tambah task pertama kamu dengan /addtask\! 🚀
+Tambahkan transaksi pertama kamu dengan /addexpense\! 🚀
 """.strip()
  
-TASK_LIST_HEADER = "📋 *Task Aktif kamu \\({count} task\\):*\n\n"
+EXPENSE_LIST_HEADER = "📋 *Daftar Transaksi kamu \\({count} data\\):*\n\n"
  
-TASK_ITEM = """
-{index}\. 📌 *{title}*{date_info}
+EXPENSE_ITEM = """
+{index}\\. 📌 *{title}*{date_info}
 """.strip()
  
-TASK_ITEM_DATE = "\n   📅 _{due_date}_"
-TASK_ITEM_URGENT = "\n   📅 _{due_date}_ ⚠️ _Segera\!_"
+EXPENSE_ITEM_DATE = "\n   📅 _{due_date}_"
+EXPENSE_ITEM_URGENT = "\n   📅 _{due_date}_"
  
 # ── Profile ───────────────────────────────────────────────────────────────────
  
@@ -162,23 +179,23 @@ _{current_bio}_
 Masukkan bio baru, atau /skip untuk lewati:
 """.strip()
  
-PROFILE_UPDATED = "✅ Profil berhasil diperbarui\!"
+PROFILE_UPDATED = "✅ Profil berhasil diperbarui\\!"
  
 # ── Error & General ───────────────────────────────────────────────────────────
  
 NOT_CONNECTED = """
 🔒 *Akun belum terhubung*
  
-Kamu belum menghubungkan akun Taskly ke Telegram\.
+Kamu belum menghubungkan akun My\-Jarvis\-Gua ke Telegram\.
 Gunakan /connect untuk memulai\.
 """.strip()
  
-CANCELLED = "❌ Aksi dibatalkan\."
- 
+CANCELLED = "❌ Aksi dibatalkan\\."
+
 UNEXPECTED_ERROR = """
 ⚠️ *Terjadi kesalahan*
  
-Silakan coba lagi\. Jika masalah berlanjut, hubungi support\.
+Silakan coba lagi\\. Jika masalah berlanjut, hubungi support\\.
 """.strip()
  
-TASK_NOT_FOUND = "❌ Task tidak ditemukan atau sudah dihapus\."
+EXPENSE_NOT_FOUND = "❌ Data transaksi tidak ditemukan atau sudah dihapus\\."
