@@ -46,7 +46,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     # OpenAI
-    #OPENAI_API_KEY: str
+    OPENAI_API_KEY: str
+    OPENAI_CHAT_MODEL: str = "gpt-4.1-mini"
+    OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
+    OPENAI_EMBEDDING_DIMENSIONS: int = 1536
     
     # Telegram
     TELEGRAM_BOT_TOKEN: str

@@ -16,7 +16,7 @@ from app.core.exceptions import (
     ValidationError,
 )
 
-from app.api import auth, expense, profile
+from app.api import auth, expense, profile, ai
 
 def create_app() -> FastAPI:
     settings = get_settings()
@@ -100,7 +100,7 @@ def _register_routers(app: FastAPI):
     app.include_router(auth.router, prefix=API_PREFIX)
     app.include_router(expense.router, prefix=API_PREFIX)
     app.include_router(profile.router, prefix=API_PREFIX)
-
+    app.include_router(ai.router, prefix=API_PREFIX)
     # Health check endpoint with dependency check
     @app.get("/health", tags=["System"], summary="Health check")
     async def health_check(supabase: Client = Depends(get_supabase_client)):
