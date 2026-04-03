@@ -2,9 +2,12 @@ from fastapi import APIRouter, Depends, status
 from fastapi import Query   
 
 from app.core.dependencies import CurrentUser, AccessToken
-from app.infrastructure.supabase_client import get_user_client
+from app.infrastructure.supabase_client import get_user_client, get_admin_supabase_client
+from app.infrastructure.openai_client import get_openai_client
+from app.repositories.ai_repository import AIRepository
 from app.repositories.expense_repository import ExpenseRepository
 from app.services.expense_service import ExpenseService
+from app.services.embedding_services import EmbeddingService
 from app.models.expense import (
     CreateExpenseRequest,
     UpdateExpenseRequest,
@@ -19,8 +22,13 @@ router = APIRouter(prefix="/expenses", tags=["Expenses"])
 def get_expense_service(token: AccessToken) -> ExpenseService:
     """Dependency to get an instance of ExpenseService."""
     user_client = get_user_client(access_token=token)
+    admin_client = get_admin_supabase_client()
+    openai_client = get_openai_client()
+
+    ai_repo = AIRepository(client=admin_client)
+    embedding_service = EmbeddingService(openai_client=openai_client, ai_repo=ai_repo)
     repo = ExpenseRepository(client=user_client)
-    return ExpenseService(expense_repo=repo)
+    return ExpenseService(expense_repo=repo, embedding_service=embedding_service)
 
 @router.get(
     "/summary",
