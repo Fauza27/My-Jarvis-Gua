@@ -20,7 +20,8 @@ TOOLS: list[dict] = [
                 "Gunakan hanya saat user benar-benar ingin mencatat transaksi. "
                 "Jika user hanya bertanya atau bercerita tanpa niat mencatat, jangan panggil tool ini. "
                 "Format transaction_date wajib YYYY-MM-DD (contoh: 2026-06-01). "
-                "Jika transaction_date tidak ada, backend akan pakai tanggal hari ini."
+                "Jika transaction_date tidak ada, backend akan pakai tanggal hari ini. "
+                "Kirim null untuk field opsional yang tidak diisi user."
             ),
             "strict": True,
             "parameters": {
@@ -40,24 +41,23 @@ TOOLS: list[dict] = [
                         "description": "Kategori utama dari transaksi, misalnya 'makanan', 'transportasi', 'hadiah', dll."
                     },
                     "description": {
-                        "type": "string",
-                        "description": "(Opsional) Deskripsi tambahan tentang transaksi, misalnya 'makan siang di restoran', 'dikasih kakak', dll."
+                        "type": ["string", "null"],
+                        "description": "Deskripsi tambahan tentang transaksi, misalnya 'makan siang di restoran'. Kirim null jika tidak ada."
                     },
                     "subcategory": {
-                        "type": "string",
-                        "description": "(Opsional) Subkategori dari transaksi untuk detail lebih lanjut, misalnya 'makanan cepat saji' sebagai subkategori dari 'makanan'."
+                        "type": ["string", "null"],
+                        "description": "Subkategori dari transaksi, misalnya 'makanan cepat saji' sebagai subkategori dari 'makanan'. Kirim null jika tidak ada."
                     },
                     "payment_method": {
-                        "type": "string",
-                        "description": "(Opsional) Metode pembayaran yang digunakan, misalnya 'tunai', 'kartu kredit', 'e-wallet', dll."
+                        "type": ["string", "null"],
+                        "description": "Metode pembayaran yang digunakan, misalnya 'tunai', 'kartu kredit', 'e-wallet'. Kirim null jika tidak ada."
                     },
                     "transaction_date": {
-                        "type": "string",
-                        "format": "date",
-                        "description": "(Opsional) Tanggal transaksi format YYYY-MM-DD. Contoh: 2026-06-01"
+                        "type": ["string", "null"],
+                        "description": "Tanggal transaksi format YYYY-MM-DD. Contoh: 2026-06-01. Kirim null jika pakai hari ini."
                     }
                 },
-                "required": ["amount", "type", "category"],
+                "required": ["amount", "type", "category", "description", "subcategory", "payment_method", "transaction_date"],
                 "additionalProperties": False,
             },
         },
@@ -70,58 +70,54 @@ TOOLS: list[dict] = [
             "name": "list_expenses",
             "description": (
                 "Lihat daftar transaksi user dengan filter opsional. "
-                "Gunakan saat user meminta lihat riwayat/pengeluaran/pemasukan."
+                "Gunakan saat user meminta lihat riwayat/pengeluaran/pemasukan. "
+                "Kirim null untuk filter yang tidak dipakai."
             ),
             "strict": True,
             "parameters": {
                 "type": "object",
                 "properties": {
                     "limit": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 100,
-                        "description": "Jumlah data per halaman. Default 20."
+                        "type": ["integer", "null"],
+                        "description": "Jumlah data per halaman (1-100). Default 20. Kirim null untuk default."
                     },
                     "offset": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "description": "Jumlah data yang dilewati untuk pagination. Default 0."
+                        "type": ["integer", "null"],
+                        "description": "Jumlah data yang dilewati untuk pagination. Default 0. Kirim null untuk default."
                     },
                     "type": {
-                        "type": "string",
-                        "enum": ["income", "expense"],
-                        "description": "Filter tipe transaksi."
+                        "type": ["string", "null"],
+                        "enum": ["income", "expense", None],
+                        "description": "Filter tipe transaksi. Kirim null jika tidak filter."
                     },
                     "category": {
-                        "type": "string",
-                        "description": "Filter kategori (partial match)."
+                        "type": ["string", "null"],
+                        "description": "Filter kategori (partial match). Kirim null jika tidak filter."
                     },
                     "q": {
-                        "type": "string",
-                        "description": "Kata kunci untuk cari di description/category/subcategory."
+                        "type": ["string", "null"],
+                        "description": "Kata kunci untuk cari di description/category/subcategory. Kirim null jika tidak filter."
                     },
                     "date_from": {
-                        "type": "string",
-                        "format": "date",
-                        "description": "Tanggal awal filter, format YYYY-MM-DD."
+                        "type": ["string", "null"],
+                        "description": "Tanggal awal filter, format YYYY-MM-DD. Kirim null jika tidak filter."
                     },
                     "date_to": {
-                        "type": "string",
-                        "format": "date",
-                        "description": "Tanggal akhir filter, format YYYY-MM-DD."
+                        "type": ["string", "null"],
+                        "description": "Tanggal akhir filter, format YYYY-MM-DD. Kirim null jika tidak filter."
                     },
                     "sort_by": {
-                        "type": "string",
-                        "enum": ["created_at", "transaction_date", "amount"],
-                        "description": "Kolom pengurutan. Default created_at."
+                        "type": ["string", "null"],
+                        "enum": ["created_at", "transaction_date", "amount", None],
+                        "description": "Kolom pengurutan. Default created_at. Kirim null untuk default."
                     },
                     "sort_order": {
-                        "type": "string",
-                        "enum": ["asc", "desc"],
-                        "description": "Urutan sort. Default desc."
+                        "type": ["string", "null"],
+                        "enum": ["asc", "desc", None],
+                        "description": "Urutan sort. Default desc. Kirim null untuk default."
                     }
                 },
-                "required": [],
+                "required": ["limit", "offset", "type", "category", "q", "date_from", "date_to", "sort_by", "sort_order"],
                 "additionalProperties": False
             }
         }
@@ -155,7 +151,8 @@ TOOLS: list[dict] = [
             "name": "update_expense",
             "description": (
                 "Update sebagian field transaksi berdasarkan expense_id. "
-                "Minimal satu field update harus diisi."
+                "Minimal satu field update harus non-null. "
+                "Kirim null untuk field yang tidak ingin diubah."
             ),
             "strict": True,
             "parameters": {
@@ -166,37 +163,36 @@ TOOLS: list[dict] = [
                         "description": "ID transaksi (UUID) yang ingin diupdate."
                     },
                     "amount": {
-                        "type": "number",
-                        "description": "Jumlah baru transaksi."
+                        "type": ["number", "null"],
+                        "description": "Jumlah baru transaksi. Kirim null jika tidak diubah."
                     },
                     "type": {
-                        "type": "string",
-                        "enum": ["income", "expense"],
-                        "description": "Tipe transaksi baru."
+                        "type": ["string", "null"],
+                        "enum": ["income", "expense", None],
+                        "description": "Tipe transaksi baru. Kirim null jika tidak diubah."
                     },
                     "description": {
-                        "type": "string",
-                        "description": "Deskripsi baru transaksi."
+                        "type": ["string", "null"],
+                        "description": "Deskripsi baru transaksi. Kirim null jika tidak diubah."
                     },
                     "category": {
-                        "type": "string",
-                        "description": "Kategori baru transaksi."
+                        "type": ["string", "null"],
+                        "description": "Kategori baru transaksi. Kirim null jika tidak diubah."
                     },
                     "subcategory": {
-                        "type": "string",
-                        "description": "Subkategori baru transaksi."
+                        "type": ["string", "null"],
+                        "description": "Subkategori baru transaksi. Kirim null jika tidak diubah."
                     },
                     "payment_method": {
-                        "type": "string",
-                        "description": "Metode pembayaran baru."
+                        "type": ["string", "null"],
+                        "description": "Metode pembayaran baru. Kirim null jika tidak diubah."
                     },
                     "transaction_date": {
-                        "type": "string",
-                        "format": "date",
-                        "description": "Tanggal transaksi baru format YYYY-MM-DD."
+                        "type": ["string", "null"],
+                        "description": "Tanggal transaksi baru format YYYY-MM-DD. Kirim null jika tidak diubah."
                     }
                 },
-                "required": ["expense_id"],
+                "required": ["expense_id", "amount", "type", "description", "category", "subcategory", "payment_method", "transaction_date"],
                 "additionalProperties": False
             }
         }
@@ -321,7 +317,12 @@ class ToolDispatcher:
         """Return today's date in UTC with YYYY-MM-DD format."""
         return datetime.now(timezone.utc).date().isoformat()
 
+    def _strip_none(self, args: dict[str, Any]) -> dict[str, Any]:
+        """Remove keys with None values — OpenAI strict mode sends null for optional fields."""
+        return {k: v for k, v in args.items() if v is not None}
+
     def _create_expense(self, args: dict[str, Any]) -> dict[str, Any]:
+        args = self._strip_none(args)
         if "transaction_date" not in args:
             args["transaction_date"] = self._default_today()
 
@@ -337,6 +338,7 @@ class ToolDispatcher:
         }
 
     def _list_expenses(self, args: dict[str, Any]) -> dict[str, Any]:
+        args = self._strip_none(args)
         result = self._expense_service.get_all_expenses(
             user_id=self._user_id,
             limit=int(args.get("limit", 20)),
@@ -372,6 +374,7 @@ class ToolDispatcher:
         if not expense_id:
             raise ValueError("expense_id is required")
 
+        args = self._strip_none(args)
         updated = self._expense_service.update_expense(
             user_id=self._user_id,
             expense_id=expense_id,
