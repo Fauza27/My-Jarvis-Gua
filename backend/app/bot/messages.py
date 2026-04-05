@@ -199,3 +199,11 @@ Silakan coba lagi\\. Jika masalah berlanjut, hubungi support\\.
 """.strip()
  
 EXPENSE_NOT_FOUND = "❌ Data transaksi tidak ditemukan atau sudah dihapus\\."
+
+# ── Voice ─────────────────────────────────────────────────────────────────────
+
+VOICE_NOT_LINKED = """
+🎙️ *Fitur Voice belum tersedia*
+ 
+Hubungkan akun kamu terlebih dahulu dengan /connect agar bisa menggunakan fitur voice message\\.
+""".strip()

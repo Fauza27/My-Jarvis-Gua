@@ -30,7 +30,7 @@ from telegram.ext import (
 )
 
 from app.bot import messages
-from app.bot.handlers import auth_handler, expense_handler, profile_handler
+from app.bot.handlers import auth_handler, expense_handler, profile_handler, voice_handler
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -135,6 +135,9 @@ def create_bot() -> Application:
             auth_handler.cmd_connect,
         )
     )
+
+    # Register voice message handler.
+    app.add_handler(voice_handler.build_voice_handler())
 
     # Register menu button message handler after conversation handlers.
     app.add_handler(
