@@ -46,4 +46,4 @@ class SemanticSearchResponse(BaseModel):
     query: str
     results: list[SearchResultItem]
     total: int
-
+
