@@ -28,8 +28,8 @@ logging.getLogger("hpack").setLevel(logging.WARNING)
 from app.bot.application import create_bot
 
 if __name__ == "__main__":
-    print("🤖 Starting My Jarvis Gua Bot...")
-    print("📡 Press Ctrl+C to stop\n")
+    print(" Starting My Jarvis Gua Bot...")
+    print(" Press Ctrl+C to stop\n")
     
     bot = create_bot()
     bot.run_polling(drop_pending_updates=True)
