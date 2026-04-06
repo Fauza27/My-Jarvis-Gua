@@ -32,8 +32,8 @@ def main_menu_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
             ["➕ Tambah Pengeluaran", "📋 Lihat Pengeluaran"],
-            ["📊 Ringkasan", "🔌 Putuskan Akun"],
-            ["❓ Bantuan"],
+            ["📊 Ringkasan", "👤 Profil Saya"],
+            ["🔌 Putuskan Akun", "❓ Bantuan"],
         ],
         resize_keyboard=True,    # Sesuaikan ukuran tombol
         one_time_keyboard=False, # Tetap tampil setelah diklik

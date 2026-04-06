@@ -30,7 +30,7 @@ from telegram.ext import (
 )
 
 from app.bot import messages
-from app.bot.handlers import auth_handler, expense_handler, profile_handler, voice_handler
+from app.bot.handlers import auth_handler, chat_handler, expense_handler, profile_handler, voice_handler
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -146,5 +146,8 @@ def create_bot() -> Application:
             handle_menu_button,
         )
     )
+
+    # Fallback plain-text handler: allows natural language chat without slash commands.
+    app.add_handler(chat_handler.build_text_chat_handler())
 
     return app

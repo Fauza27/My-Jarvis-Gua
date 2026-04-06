@@ -32,6 +32,12 @@ HELP_TEXT = """
 /list — Lihat daftar transaksi
 /stats — Lihat ringkasan keuangan
 
+*Chat Natural Language \(tanpa command\):*
+Kamu bisa langsung ketik pesan biasa, contoh:
+• `catat pengeluaran 25000 untuk makan siang`
+• `berapa total pengeluaran saya bulan ini\?`
+• `hapus transaksi id xxxxx`
+
 *Profil:*
 /profile — Lihat profil kamu
 /editprofile — Edit nama dan bio
@@ -63,6 +69,7 @@ CONNECT_SUCCESS = """
 Halo, *{display_name}*\! Akun Telegram kamu sekarang terhubung dengan My\-Jarvis\-Gua\.
  
 Gunakan /addexpense untuk mencatat transaksi, atau /list untuk melihat riwayat transaksi\.
+Kamu juga bisa langsung chat biasa tanpa command, misalnya: `catat pengeluaran 20000 buat makan`\.
 """.strip()
 
 CONNECT_FAILED_INVALID_CODE = """
