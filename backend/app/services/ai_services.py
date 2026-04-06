@@ -114,8 +114,8 @@ class AIService:
         new_message: str,
     ) -> list[dict]:
         """
-        arrange messages array for send to OpenAI.
-        format that need by Openai chat completion:
+        Arrange messages array for OpenAI Responses API input.
+        Supported format:
         [
             {"role": "system",    "content": "..."},  ← always in the first
             {"role": "user",      "content": "..."},  ← from history
@@ -133,59 +133,146 @@ class AIService:
         messages.append({"role": "user", "content": new_message})
         return messages
 
+    @staticmethod
+    def _normalize_tools_for_responses(tools: list[dict]) -> list[dict]:
+        """Convert Chat Completions tool schema into Responses API tool schema."""
+        normalized: list[dict] = []
+        for tool in tools:
+            if (
+                isinstance(tool, dict)
+                and tool.get("type") == "function"
+                and isinstance(tool.get("function"), dict)
+            ):
+                function_def = dict(tool["function"])
+                normalized.append({"type": "function", **function_def})
+            else:
+                normalized.append(tool)
+        return normalized
+
+    @staticmethod
+    def _safe_attr(item, key: str, default=None):
+        """Read value from typed SDK objects or plain dict payloads."""
+        if isinstance(item, dict):
+            return item.get(key, default)
+        return getattr(item, key, default)
+
+    def _extract_tool_calls_from_response(self, response) -> list[dict[str, str]]:
+        """Extract function calls from a Responses API result."""
+        tool_calls: list[dict[str, str]] = []
+
+        for output_item in getattr(response, "output", []) or []:
+            item_type = self._safe_attr(output_item, "type")
+            if item_type != "function_call":
+                continue
+
+            name = self._safe_attr(output_item, "name")
+            arguments = self._safe_attr(output_item, "arguments") or "{}"
+            call_id = self._safe_attr(output_item, "call_id") or self._safe_attr(output_item, "id")
+
+            if not name or not call_id:
+                logger.warning("Skipping malformed function_call item from Responses API")
+                continue
+
+            tool_calls.append(
+                {
+                    "name": str(name),
+                    "arguments": str(arguments),
+                    "call_id": str(call_id),
+                }
+            )
+
+        return tool_calls
+
+    def _extract_text_from_response(self, response) -> str:
+        """Extract assistant text from a Responses API result."""
+        output_text = getattr(response, "output_text", None)
+        if output_text:
+            return str(output_text).strip()
+
+        chunks: list[str] = []
+        for output_item in getattr(response, "output", []) or []:
+            if self._safe_attr(output_item, "type") != "message":
+                continue
+
+            content_items = self._safe_attr(output_item, "content", []) or []
+            for content_item in content_items:
+                content_type = self._safe_attr(content_item, "type")
+                if content_type not in {"output_text", "text"}:
+                    continue
+
+                text = self._safe_attr(content_item, "text")
+                if isinstance(text, dict):
+                    text = text.get("value")
+
+                if text:
+                    chunks.append(str(text))
+
+        return "\n".join(chunks).strip()
+
     def _run_chat_loop(
         self,
         messages: list[dict],
         dispatcher: ToolDispatcher,
     ) -> tuple[str, list[str]]:
         """
-        core loop functon calling.
+        Core loop for OpenAI Responses API + function calling.
 
-        it will keep running until the ai return answer text (finish_reason=="stop).
-        every iterasi: send to OpenAI -> if there is tool call -> execute -> loop again
+        Flow:
+        1) Send initial messages to Responses API
+        2) If model returns function_call items, execute tools
+        3) Send function_call_output items back to Responses API
+        4) Repeat until model returns plain assistant text
 
         returns:
             Tuple (final_reply_text, list_of_actions_taken)
         """
-        actions_taken = []
+        actions_taken: list[str] = []
         MAX_ITERATIONS = 10
+        tools = self._normalize_tools_for_responses(TOOLS)
 
-        for iteration in range(MAX_ITERATIONS):
-            response = self._openai_client.chat.completions.create(
+        response = self._openai_client.responses.create(
+            model=self.settings.OPENAI_CHAT_MODEL,
+            input=messages,
+            tools=tools,
+            tool_choice="auto",
+        )
+
+        for _ in range(MAX_ITERATIONS):
+            tool_calls = self._extract_tool_calls_from_response(response)
+
+            if not tool_calls:
+                final_reply = self._extract_text_from_response(response)
+                if final_reply:
+                    return final_reply, actions_taken
+
+                logger.warning("Responses API returned no tool call and no text output")
+                return "Maaf, saya belum bisa memproses permintaan ini.", actions_taken
+
+            tool_outputs = []
+            for tool_call in tool_calls:
+                func_name = tool_call["name"]
+                func_args = tool_call["arguments"]
+                call_id = tool_call["call_id"]
+
+                logger.info("AI calling tool: %s(%s...)", func_name, func_args[:100])
+
+                result = dispatcher.execute(func_name, func_args)
+                actions_taken.append(func_name)
+                tool_outputs.append(
+                    {
+                        "type": "function_call_output",
+                        "call_id": call_id,
+                        "output": json.dumps(result, ensure_ascii=False),
+                    }
+                )
+
+            response = self._openai_client.responses.create(
                 model=self.settings.OPENAI_CHAT_MODEL,
-                messages=messages,
-                tools=TOOLS,
+                previous_response_id=response.id,
+                input=tool_outputs,
+                tools=tools,
                 tool_choice="auto",
             )
-
-            assistant_message = response.choices[0].message
-            finish_reason = response.choices[0].finish_reason
-
-            messages.append(assistant_message)
-
-            if finish_reason == "stop":
-                return assistant_message.content or "", actions_taken
-
-            if finish_reason == "tool_calls":
-                for tool_call in assistant_message.tool_calls:
-                    func_name = tool_call.function.name
-                    func_args = tool_call.function.arguments
-
-                    logger.info(f"AI calling tool: {func_name}({func_args[:100]}...)")
-
-                    result = dispatcher.execute(func_name, func_args)
-                    actions_taken.append(func_name)
-
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "content": json.dumps(result, ensure_ascii=False),
-                    })
-
-                continue  # ← Continue the OUTER loop to send tool results back to OpenAI
-
-            logger.warning(f"Unexpected finish reason: {finish_reason}")
-            break
 
         logger.error("Chat loop exceeded maximum iterations without finishing.")
         return "Sorry, there was an error processing your request.", actions_taken
