@@ -22,6 +22,11 @@ const urbanist = Urbanist({
 export const metadata: Metadata = {
   title: "My Jarvis Gua",
   description: "Your personal AI assistant for life management",
+  icons: {
+    icon: "/Logo-Finance-Tracker-2.png",
+    shortcut: "/Logo-Finance-Tracker-2.png",
+    apple: "/Logo-Finance-Tracker-2.png",
+  },
 };
 
 export default function RootLayout({
