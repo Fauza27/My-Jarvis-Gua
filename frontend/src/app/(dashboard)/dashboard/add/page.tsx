@@ -1,25 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Wallet,
-  ClipboardList,
-  Apple,
-  Dumbbell,
-  BookOpen,
-  Target,
-  ArrowLeft,
-  X,
-  Construction,
-} from "lucide-react";
+import { Wallet, ClipboardList, Apple, Dumbbell, BookOpen, Target, ArrowLeft, X, Construction } from "lucide-react";
 import { ExpenseForm } from "@/features/expense/components/ExpenseForm";
 import Link from "next/link";
+import Image from "next/image";
 
 type AddOption = {
   id: string;
   title: string;
   description: string;
-  icon: React.ElementType;
+  icon?: React.ElementType;
+  iconImage?: string;
   available: boolean;
 };
 
@@ -28,7 +20,7 @@ const addOptions: AddOption[] = [
     id: "expense",
     title: "Transaksi Keuangan",
     description: "Catat pemasukan atau pengeluaran",
-    icon: Wallet,
+    iconImage: "/Logo-Finance-Tracker-HeadVersion(small).png",
     available: true,
   },
   {
@@ -107,14 +99,9 @@ export default function AddPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground">Tambah Data</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Pilih jenis data yang ingin kamu tambahkan.
-            </p>
+            <p className="text-sm text-muted-foreground mt-0.5">Pilih jenis data yang ingin kamu tambahkan.</p>
           </div>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors"
-          >
+          <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors">
             <ArrowLeft className="w-4 h-4" />
             Kembali
           </Link>
@@ -132,10 +119,7 @@ export default function AddPage() {
                 className={`
                   group text-left bg-card rounded-2xl border p-4
                   transition-all duration-200 hover:-translate-y-0.5
-                  ${option.available
-                    ? "border-border hover:border-primary/30 hover:shadow-md"
-                    : "border-border/50 opacity-70 hover:opacity-90"
-                  }
+                  ${option.available ? "border-border hover:border-primary/30 hover:shadow-md" : "border-border/50 opacity-70 hover:opacity-90"}
                 `}
               >
                 <div className="flex items-start gap-3">
@@ -143,32 +127,21 @@ export default function AddPage() {
                     className={`
                       w-10 h-10 rounded-xl flex items-center justify-center shrink-0
                       transition-colors
-                      ${option.available
-                        ? "bg-primary/10 group-hover:bg-primary/15"
-                        : "bg-muted"
-                      }
+                      ${option.available ? "bg-primary/10 group-hover:bg-primary/15" : "bg-muted"}
                     `}
                   >
-                    <Icon
-                      className={`w-5 h-5 ${
-                        option.available ? "text-primary" : "text-muted-foreground"
-                      }`}
-                    />
+                    {option.iconImage ? (
+                      <Image src={option.iconImage} alt={`${option.title} icon`} width={22} height={22} className="rounded-md object-contain" />
+                    ) : (
+                      Icon && <Icon className={`w-5 h-5 ${option.available ? "text-primary" : "text-muted-foreground"}`} />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-card-foreground">
-                        {option.title}
-                      </h3>
-                      {!option.available && (
-                        <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">
-                          Soon
-                        </span>
-                      )}
+                      <h3 className="text-sm font-semibold text-card-foreground">{option.title}</h3>
+                      {!option.available && <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">Soon</span>}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {option.description}
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{option.description}</p>
                   </div>
                 </div>
               </button>
@@ -179,10 +152,7 @@ export default function AddPage() {
 
       {/* ── Form Overlay ── */}
       {selectedOption && (
-        <div
-          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
-          onClick={() => setSelectedOption(null)}
-        >
+        <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center" onClick={() => setSelectedOption(null)}>
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
@@ -203,16 +173,15 @@ export default function AddPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <selectedOption.icon className="w-4 h-4 text-primary" />
+                    {selectedOption.iconImage ? (
+                      <Image src={selectedOption.iconImage} alt={`${selectedOption.title} icon`} width={18} height={18} className="rounded-sm object-contain" />
+                    ) : (
+                      selectedOption.icon && <selectedOption.icon className="w-4 h-4 text-primary" />
+                    )}
                   </div>
-                  <h2 className="text-base font-semibold text-foreground">
-                    {selectedOption.title}
-                  </h2>
+                  <h2 className="text-base font-semibold text-foreground">{selectedOption.title}</h2>
                 </div>
-                <button
-                  onClick={() => setSelectedOption(null)}
-                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                >
+                <button onClick={() => setSelectedOption(null)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -220,14 +189,7 @@ export default function AddPage() {
 
             {/* Form Content */}
             <div className="p-6 pt-4">
-              {selectedOption.available && selectedOption.id === "expense" ? (
-                <ExpenseForm compact onSuccess={() => setSelectedOption(null)} />
-              ) : (
-                <ComingSoonForm
-                  option={selectedOption}
-                  onClose={() => setSelectedOption(null)}
-                />
-              )}
+              {selectedOption.available && selectedOption.id === "expense" ? <ExpenseForm compact onSuccess={() => setSelectedOption(null)} /> : <ComingSoonForm option={selectedOption} onClose={() => setSelectedOption(null)} />}
             </div>
           </div>
         </div>
