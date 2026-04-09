@@ -5,8 +5,9 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/features/auth/store";
 import { isTokenExpired } from "@/features/auth/utils";
+import { useMyProfile } from "@/features/profile/hooks";
 import Link from "next/link";
-import { CirclePlus, CircleUserRound, House, MessageCircle, Settings, UserRound } from "lucide-react";
+import { CirclePlus, House, MessageCircle, Settings, UserRound } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", icon: House, label: "Home" },
@@ -22,7 +23,10 @@ const rightItems = navItems.slice(3, 5);
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, accessToken, expiresAt, hasHydrated } = useAuthStore();
+  const { isAuthenticated, accessToken, expiresAt, hasHydrated, user } = useAuthStore();
+  const profileQuery = useMyProfile();
+
+  // const activeNavItem = navItems.find(({ href }) => pathname === href || (href !== "/dashboard" && pathname.startsWith(href)));
 
   useEffect(() => {
     if (!hasHydrated) {
@@ -43,35 +47,74 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const avatar = {
-    display_name: "Muhammad Fauza",
-    avatar_url: "",
+    display_name: profileQuery.data?.display_name || user?.email?.split("@")[0] || "User",
+    avatar_url: profileQuery.data?.avatar_url || "",
   };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <div className="p-4 pb-2">
-        <header>
-          <Link href="/dashboard" className="inline-flex items-center gap-3 group">
-            {avatar.avatar_url ? (
-              <Image src={avatar.avatar_url} alt="avatar profile" width={40} height={40} className="rounded-xl" />
-            ) : (
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <CircleUserRound className="w-5 h-5 text-primary" />
-              </div>
-            )}
+      <div className="mx-auto flex min-h-screen w-full max-w-7xl md:gap-6 md:px-4 lg:px-6">
+        {/* Desktop Sidebar */}
+        <aside className="hidden md:flex md:w-64 md:flex-col md:py-6 lg:w-72">
+          <Link href="/dashboard" className="inline-flex items-center gap-3 rounded-2xl border border-border/70 bg-card/60 p-3">
+            {avatar.avatar_url ? <Image src={avatar.avatar_url} alt="avatar profile" width={50} height={50} className="rounded-xl" /> : <Image src="/Logo-profile.png" alt="avatar profile" width={50} height={50} className="rounded-xl" />}
             <div>
-              <h1 className="text-sm font-semibold text-foreground">Hello, {avatar.display_name}</h1>
+              <p className="text-xs text-muted-foreground">Welcome back</p>
+              <h2 className="text-sm font-semibold text-foreground">{avatar.display_name}</h2>
             </div>
           </Link>
-        </header>
+
+          <nav className="mt-4 rounded-2xl border border-border/70 bg-card/60 p-2">
+            <ul className="space-y-1">
+              {navItems.map(({ href, icon: Icon, label }) => {
+                const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
+                return (
+                  <li key={href}>
+                    <Link
+                      href={href}
+                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors duration-200 ${isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                    >
+                      {label === "Chat" ? <Image src="/Logo-Chat.png" alt="Chat" width={56} height={56} className="h-9 w-9 object-contain" /> : <Icon className={`h-4.5 w-4.5 ${isActive ? "stroke-[2.5]" : ""}`} />}
+                      <span className="font-medium">{label}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        </aside>
+
+        <div className="flex min-h-screen flex-1 flex-col">
+          {/* Header */}
+          <div className="p-4 pb-2 md:px-0 md:pt-6 md:pb-4">
+            <header className="flex items-center justify-between">
+              <Link href="/dashboard" className="inline-flex items-center gap-3 group md:hidden">
+                {avatar.avatar_url ? (
+                  <Image src={avatar.avatar_url} alt="avatar profile" width={60} height={60} className="rounded-xl" />
+                ) : (
+                  <Image src="/Logo-profile.png" alt="avatar profile" width={60} height={60} className="rounded-xl" />
+                )}
+                <div>
+                  <h1 className="text-xl font-semibold text-foreground">Hello, {avatar.display_name}</h1>
+                </div>
+              </Link>
+
+              {/* <div className="hidden md:block">
+                <p className="text-sm text-muted-foreground">Life OS Workspace</p>
+                <h1 className="text-2xl font-semibold text-foreground">{activeNavItem?.label ?? "Dashboard"}</h1>
+              </div> */}
+            </header>
+          </div>
+
+          {/* Main content — padding bottom agar tidak tertutup navbar */}
+          <main className="flex-1 pb-28 md:pb-8">
+            <div className="mx-auto w-full md:max-w-6xl">{children}</div>
+          </main>
+        </div>
       </div>
 
-      {/* Main content — padding bottom agar tidak tertutup navbar */}
-      <main className="pb-28">{children}</main>
-
       {/* Bottom Navigation — fixed full width */}
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border/60 bg-card/95 backdrop-blur supports-backdrop-filter:bg-card/85 rounded-t-lg">
+      <nav className="fixed inset-x-0 bottom-0 z-50 rounded-t-lg border-t border-border/60 bg-card/95 backdrop-blur supports-backdrop-filter:bg-card/85 md:hidden">
         <ul className="grid w-full grid-cols-5 items-end px-2 pt-2 pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
           {/* Item Kiri */}
           {leftItems.map(({ href, icon: Icon, label }) => {
@@ -93,12 +136,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* FAB Button Tengah */}
           <li className="flex justify-center">
             <Link
-              href="/dashboard/add"
+              href="/dashboard/chat"
               className="-mt-5 flex h-20 w-20 items-center justify-center rounded-full border border-primary/20 bg-primary text-primary-foreground
                         shadow-lg shadow-primary/30 transition-transform duration-200 hover:scale-[1.03] active:scale-95"
               aria-label="Tambah baru"
             >
-              <MessageCircle className="h-5 w-5 stroke-[2.5]" />
+              <Image src="/Logo-Chat.png" alt="Chat" width={56} height={56} className="h-17 w-17 object-contain" />
             </Link>
           </li>
 
