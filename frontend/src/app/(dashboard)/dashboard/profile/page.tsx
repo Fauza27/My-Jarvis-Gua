@@ -63,9 +63,7 @@ export default function ProfilePage() {
   const profile = profileQuery.data;
   const displayName = profile?.display_name || user?.email?.split("@")[0] || "User";
   const joinedDateSource = profile?.created_at || user?.created_at;
-  const joinedDate = joinedDateSource
-    ? new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric" }).format(new Date(joinedDateSource))
-    : "-";
+  const joinedDate = joinedDateSource ? new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric" }).format(new Date(joinedDateSource)) : "-";
 
   const generateCode = async () => {
     setCodeError(null);
@@ -109,11 +107,7 @@ export default function ProfilePage() {
   return (
     <>
       <div className="p-4 space-y-5">
-        {profileQuery.isError && (
-          <div className="bg-destructive/10 text-destructive p-3 rounded-xl border border-destructive/20 text-sm">
-            {profileQuery.error instanceof Error ? profileQuery.error.message : "Gagal memuat data profil"}
-          </div>
-        )}
+        {profileQuery.isError && <div className="bg-destructive/10 text-destructive p-3 rounded-xl border border-destructive/20 text-sm">{profileQuery.error instanceof Error ? profileQuery.error.message : "Gagal memuat data profil"}</div>}
 
         {/* ── Avatar & Name ── */}
         <div className="flex flex-col items-center text-center pt-2">

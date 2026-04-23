@@ -3,19 +3,7 @@
 import { useState } from "react";
 import { useEffect } from "react";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Moon,
-  Sun,
-  Bell,
-  BellOff,
-  Database,
-  Trash2,
-  Download,
-  RefreshCw,
-  ChevronRight,
-  Info,
-} from "lucide-react";
+import { ArrowLeft, Moon, Sun, Bell, BellOff, Database, Trash2, Download, RefreshCw, ChevronRight, Info } from "lucide-react";
 import { exportExpensesCsv } from "@/features/expense/api/expenseApi";
 import { getStoredDarkMode, setDarkModePreference } from "@/lib/theme";
 
@@ -100,9 +88,7 @@ function SettingsSection({ title, children }: { title: string; children: React.R
   return (
     <div>
       <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-1">{title}</h3>
-      <div className="bg-card rounded-2xl border border-border overflow-hidden divide-y divide-border/50">
-        {children}
-      </div>
+      <div className="bg-card rounded-2xl border border-border overflow-hidden divide-y divide-border/50">{children}</div>
     </div>
   );
 }
@@ -158,9 +144,7 @@ export default function SettingsPage() {
 
   return (
     <div className="p-4 space-y-5">
-      {actionMessage && (
-        <div className="rounded-xl border border-border bg-card p-3 text-sm text-muted-foreground">{actionMessage}</div>
-      )}
+      {actionMessage && <div className="rounded-xl border border-border bg-card p-3 text-sm text-muted-foreground">{actionMessage}</div>}
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -176,17 +160,7 @@ export default function SettingsPage() {
 
       {/* ── Tampilan ── */}
       <SettingsSection title="Tampilan">
-        <SettingsItem
-          icon={settings.darkMode ? Moon : Sun}
-          label="Mode Gelap"
-          description={settings.darkMode ? "Tema gelap aktif" : "Tema terang aktif"}
-          action={
-            <Toggle
-              enabled={settings.darkMode}
-              onChange={handleDarkModeChange}
-            />
-          }
-        />
+        <SettingsItem icon={settings.darkMode ? Moon : Sun} label="Mode Gelap" description={settings.darkMode ? "Tema gelap aktif" : "Tema terang aktif"} action={<Toggle enabled={settings.darkMode} onChange={handleDarkModeChange} />} />
       </SettingsSection>
 
       {/* ── Notifikasi ── */}
@@ -195,68 +169,29 @@ export default function SettingsPage() {
           icon={settings.notifications ? Bell : BellOff}
           label="Push Notifications"
           description={settings.notifications ? "Notifikasi aktif" : "Notifikasi nonaktif"}
-          action={
-            <Toggle
-              enabled={settings.notifications}
-              onChange={(v) => updateSetting("notifications", v)}
-            />
-          }
+          action={<Toggle enabled={settings.notifications} onChange={(v) => updateSetting("notifications", v)} />}
         />
       </SettingsSection>
 
       {/* ── Data & Sinkronisasi ── */}
       <SettingsSection title="Data & Sinkronisasi">
-        <SettingsItem
-          icon={RefreshCw}
-          label="Auto Sync"
-          description={settings.autoSync ? "Data otomatis disinkronkan" : "Sinkron manual"}
-          action={
-            <Toggle
-              enabled={settings.autoSync}
-              onChange={(v) => updateSetting("autoSync", v)}
-            />
-          }
-        />
-        <SettingsItem
-          icon={Download}
-          label="Export Data"
-          description="Download semua data sebagai CSV"
-          onClick={handleExportData}
-          action={isExporting ? <span className="text-xs text-muted-foreground">Exporting...</span> : undefined}
-        />
-        <SettingsItem
-          icon={Database}
-          label="Cache & Storage"
-          description="Kelola penyimpanan lokal"
-          onClick={() => {}}
-        />
+        <SettingsItem icon={RefreshCw} label="Auto Sync" description={settings.autoSync ? "Data otomatis disinkronkan" : "Sinkron manual"} action={<Toggle enabled={settings.autoSync} onChange={(v) => updateSetting("autoSync", v)} />} />
+        <SettingsItem icon={Download} label="Export Data" description="Download semua data sebagai CSV" onClick={handleExportData} action={isExporting ? <span className="text-xs text-muted-foreground">Exporting...</span> : undefined} />
+        <SettingsItem icon={Database} label="Cache & Storage" description="Kelola penyimpanan lokal" onClick={() => {}} />
       </SettingsSection>
 
       {/* ── Zona Bahaya ── */}
       <SettingsSection title="Zona Bahaya">
-        <SettingsItem
-          icon={Trash2}
-          label="Hapus Semua Data"
-          description="Tindakan ini tidak dapat dibatalkan"
-          onClick={() => {}}
-          variant="danger"
-        />
+        <SettingsItem icon={Trash2} label="Hapus Semua Data" description="Tindakan ini tidak dapat dibatalkan" onClick={() => {}} variant="danger" />
       </SettingsSection>
 
       {/* ── App Info ── */}
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
-        <SettingsItem
-          icon={Info}
-          label="Tentang Aplikasi"
-          description="My Jarvis Gua v0.1.0"
-          onClick={() => {}}
-        />
+        <SettingsItem icon={Info} label="Tentang Aplikasi" description="My Jarvis Gua v0.1.0" onClick={() => {}} />
       </div>
 
       {/* Footer */}
-      <p className="text-center text-xs text-muted-foreground pb-4">
-        Made with 💜 by Muhammad Fauza
-      </p>
+      <p className="text-center text-xs text-muted-foreground pb-4">Made with 💜 by Muhammad Fauza</p>
     </div>
   );
 }
