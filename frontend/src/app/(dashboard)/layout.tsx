@@ -12,7 +12,7 @@ import { CirclePlus, House, MessageCircle, Settings, UserRound } from "lucide-re
 const navItems = [
   { href: "/dashboard", icon: House, label: "Home" },
   { href: "/dashboard/add", icon: CirclePlus, label: "Add" },
-  { href: "/chat", icon: MessageCircle, label: "Chat" },
+  { href: "/dashboard/chat", icon: MessageCircle, label: "Chat" },
   { href: "/dashboard/settings", icon: Settings, label: "Settings" },
   { href: "/dashboard/profile", icon: UserRound, label: "Profile" },
 ];
@@ -25,6 +25,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const { isAuthenticated, accessToken, expiresAt, hasHydrated, user } = useAuthStore();
   const profileQuery = useMyProfile();
+  const isChatRoute = pathname.startsWith("/dashboard/chat");
 
   // const activeNavItem = navItems.find(({ href }) => pathname === href || (href !== "/dashboard" && pathname.startsWith(href)));
 
@@ -86,29 +87,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <div className="flex min-h-screen flex-1 flex-col">
           {/* Header */}
-          <div className="p-4 pb-2 md:px-0 md:pt-6 md:pb-4">
-            <header className="flex items-center justify-between">
-              <Link href="/dashboard" className="inline-flex items-center gap-3 group md:hidden">
-                {avatar.avatar_url ? (
-                  <Image src={avatar.avatar_url} alt="avatar profile" width={60} height={60} className="rounded-xl" />
-                ) : (
-                  <Image src="/Logo-profile.png" alt="avatar profile" width={60} height={60} className="rounded-xl" />
-                )}
-                <div>
-                  <h1 className="text-xl font-semibold text-foreground">Hello, {avatar.display_name}</h1>
-                </div>
-              </Link>
-
-              {/* <div className="hidden md:block">
-                <p className="text-sm text-muted-foreground">Life OS Workspace</p>
-                <h1 className="text-2xl font-semibold text-foreground">{activeNavItem?.label ?? "Dashboard"}</h1>
-              </div> */}
-            </header>
-          </div>
+          {!isChatRoute && (
+            <div className="p-4 pb-2 md:px-0 md:pt-6 md:pb-4">
+              <header className="flex items-center justify-between">
+                <Link href="/dashboard" className="inline-flex items-center gap-3 group md:hidden">
+                  {avatar.avatar_url ? (
+                    <Image src={avatar.avatar_url} alt="avatar profile" width={60} height={60} className="rounded-xl" />
+                  ) : (
+                    <Image src="/Logo-profile.png" alt="avatar profile" width={60} height={60} className="rounded-xl" />
+                  )}
+                  <div>
+                    <h1 className="text-xl font-semibold text-foreground">Hello, {avatar.display_name}</h1>
+                  </div>
+                </Link>
+              </header>
+            </div>
+          )}
 
           {/* Main content — padding bottom agar tidak tertutup navbar */}
-          <main className="flex-1 pb-28 md:pb-8">
-            <div className="mx-auto w-full md:max-w-6xl">{children}</div>
+          <main className={`flex-1 ${isChatRoute ? "pb-20 md:pb-3" : "pb-28 md:pb-8"}`}>
+            <div className={`mx-auto w-full ${isChatRoute ? "" : "md:max-w-6xl"}`}>{children}</div>
           </main>
         </div>
       </div>
