@@ -22,11 +22,13 @@ def get_ai_services(
     openai = get_openai_client()
 
     user_client = get_user_client(token)
-    expense_service = ExpenseService(expense_repo=ExpenseRepository(client=user_client))
-
     admin_client = get_admin_supabase_client()
     ai_repo = AIRepository(client=admin_client)
     embedding_service = EmbeddingService(openai_client=openai, ai_repo=ai_repo)
+    expense_service = ExpenseService(
+        expense_repo=ExpenseRepository(client=user_client),
+        embedding_service=embedding_service,
+    )
 
     return AIService(
         openai_client=openai,
