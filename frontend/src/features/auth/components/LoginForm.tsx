@@ -62,14 +62,14 @@ export function LoginForm() {
           role="alert"
           aria-live="polite"
           className="flex items-start gap-3 p-4 rounded-lg
-            bg-red-50 border border-red-200
-            text-sm text-red-700
+            bg-destructive/10 border border-destructive/20
+            text-sm text-destructive
             animate-in fade-in slide-in-from-top-1 duration-200"
         >
-          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-destructive" />
           <div className="space-y-1">
             <p className="font-medium">Login Failed</p>
-            <p className="text-red-600">{serverError}</p>
+            <p className="text-destructive/90">{serverError}</p>
           </div>
         </div>
       )}
@@ -79,11 +79,11 @@ export function LoginForm() {
           role="status"
           aria-live="polite"
           className="flex items-center gap-3 p-4 rounded-lg
-            bg-green-50 border border-green-200
-            text-sm text-green-700
+            bg-success/10 border border-success/20
+            text-sm text-success
             animate-in fade-in slide-in-from-top-1 duration-200"
         >
-          <CheckCircle2 className="w-4 h-4 shrink-0 text-green-500" />
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-success" />
           <p>Login successful! Redirecting to dashboard...</p>
         </div>
       )}
@@ -110,13 +110,13 @@ export function LoginForm() {
               transition-colors duration-150
               focus:outline-none focus:ring-2 focus:ring-offset-1
               disabled:opacity-50 disabled:cursor-not-allowed
-              ${errors.email ? "border-red-400 bg-red-50 focus:ring-red-500 focus:border-red-400" : "border-input bg-background focus:ring-ring focus:border-primary"}
+              ${errors.email ? "border-destructive bg-destructive/5 focus:ring-destructive focus:border-destructive" : "border-input bg-background focus:ring-ring focus:border-primary"}
             `}
           />
         </div>
 
         {errors.email && (
-          <p id="email-error" role="alert" className="flex items-center gap-1.5 text-xs text-red-600 mt-1">
+          <p id="email-error" role="alert" className="flex items-center gap-1.5 text-xs text-destructive mt-1">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             {errors.email.message}
           </p>
@@ -144,7 +144,7 @@ export function LoginForm() {
               transition-colors duration-150
               focus:outline-none focus:ring-2 focus:ring-offset-1
               disabled:opacity-50 disabled:cursor-not-allowed
-              ${errors.password ? "border-red-400 bg-red-50 focus:ring-red-500 focus:border-red-400" : "border-input bg-background focus:ring-ring focus:border-primary"}
+              ${errors.password ? "border-destructive bg-destructive/5 focus:ring-destructive focus:border-destructive" : "border-input bg-background focus:ring-ring focus:border-primary"}
             `}
           />
           <button
@@ -165,13 +165,13 @@ export function LoginForm() {
           </button>
         </div>
         {errors.password && (
-          <p id="password-error" role="alert" className="flex items-center gap-1.5 text-xs text-red-600 mt-1">
+          <p id="password-error" role="alert" className="flex items-center gap-1.5 text-xs text-destructive mt-1">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             {errors.password.message}
           </p>
         )}
         <div className="flex items-center justify-end mt-2">
-          <Link href="/forgot-password" className="text-xs text-foreground hover:text-indigo-700 hover:underline focus:outline-none focus:underline" tabIndex={isDisabled ? -1 : 0}>
+          <Link href="/forgot-password" className="text-xs text-foreground hover:text-primary hover:underline focus:outline-none focus:underline" tabIndex={isDisabled ? -1 : 0}>
             Forgot password?
           </Link>
         </div>

@@ -35,11 +35,11 @@ function PasswordStrengthBar({ password }: { password: string }) {
 
   const strengthConfig = {
     0: { label: "", color: "" },
-    1: { label: "Very Weak", color: "bg-red-500" },
-    2: { label: "Weak", color: "bg-orange-500" },
-    3: { label: "Moderate", color: "bg-yellow-500" },
-    4: { label: "Strong", color: "bg-green-500" },
-    5: { label: "Very Strong", color: "bg-green-700" },
+    1: { label: "Very Weak", color: "bg-destructive" },
+    2: { label: "Weak", color: "bg-warning/80" },
+    3: { label: "Moderate", color: "bg-warning" },
+    4: { label: "Strong", color: "bg-success/80" },
+    5: { label: "Very Strong", color: "bg-success" },
   };
 
   const config = strengthConfig[strength as keyof typeof strengthConfig];
@@ -55,15 +55,15 @@ function PasswordStrengthBar({ password }: { password: string }) {
               ${strength >= level ? config.color : "bg-muted"}`}
           />
         ))}
-        <span className={`text-[10px] ml-1.5 font-medium ${strength === 1 || strength === 2 ? "text-red-600" : strength === 3 ? "text-yellow-600" : strength >= 4 ? "text-green-600" : "text-muted-foreground"}`}>{config.label}</span>
+        <span className={`text-[10px] ml-1.5 font-medium ${strength === 1 ? "text-destructive" : strength === 2 || strength === 3 ? "text-warning" : strength >= 4 ? "text-success" : "text-muted-foreground"}`}>{config.label}</span>
       </div>
 
       {/* Checklist requirements - ultra compact */}
       <ul className="space-y-0">
         {requirements.map((req) => (
           <li key={req.label} className="flex items-center gap-1 text-[10px]">
-            {req.met ? <Check className="w-2.5 h-2.5 text-green-500 shrink-0" /> : <X className="w-2.5 h-2.5 text-muted-foreground shrink-0" />}
-            <span className={req.met ? "text-green-700" : "text-muted-foreground"}>{req.label}</span>
+            {req.met ? <Check className="w-2.5 h-2.5 text-success shrink-0" /> : <X className="w-2.5 h-2.5 text-muted-foreground shrink-0" />}
+            <span className={req.met ? "text-success" : "text-muted-foreground"}>{req.label}</span>
           </li>
         ))}
       </ul>
@@ -126,14 +126,14 @@ export function RegisterForm() {
           role="alert"
           aria-live="polite"
           className="flex items-start gap-3 p-4 rounded-lg
-            bg-red-50 border border-red-200
-            text-sm text-red-700
+            bg-destructive/10 border border-destructive/20
+            text-sm text-destructive
             animate-in fade-in slide-in-from-top-1 duration-200"
         >
-          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-destructive" />
           <div className="space-y-1">
             <p className="font-medium">Registration Failed</p>
-            <p className="text-red-600">{serverError}</p>
+            <p className="text-destructive/90">{serverError}</p>
           </div>
         </div>
       )}
@@ -143,11 +143,11 @@ export function RegisterForm() {
           role="status"
           aria-live="polite"
           className="flex items-center gap-3 p-4 rounded-lg
-            bg-green-50 border border-green-200
-            text-sm text-green-700
+            bg-success/10 border border-success/20
+            text-sm text-success
             animate-in fade-in slide-in-from-top-1 duration-200"
         >
-          <CheckCircle2 className="w-4 h-4 shrink-0 text-green-500" />
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-success" />
           <p>Registration successful! Redirecting to login...</p>
         </div>
       )}
@@ -175,13 +175,13 @@ export function RegisterForm() {
               transition-colors duration-150
               focus:outline-none focus:ring-2 focus:ring-offset-1
               disabled:opacity-50 disabled:cursor-not-allowed
-              ${errors.email ? "border-red-400 bg-red-50 focus:ring-red-500 focus:border-red-400" : "border-input bg-background focus:ring-ring focus:border-primary"}
+              ${errors.email ? "border-destructive bg-destructive/5 focus:ring-destructive focus:border-destructive" : "border-input bg-background focus:ring-ring focus:border-primary"}
             `}
           />
         </div>
 
         {errors.email && (
-          <p id="email-error" role="alert" className="flex items-center gap-1.5 text-xs text-red-600 mt-1">
+          <p id="email-error" role="alert" className="flex items-center gap-1.5 text-xs text-destructive mt-1">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             {errors.email.message}
           </p>
@@ -210,7 +210,7 @@ export function RegisterForm() {
               transition-colors duration-150
               focus:outline-none focus:ring-2 focus:ring-offset-1
               disabled:opacity-50 disabled:cursor-not-allowed
-              ${errors.password ? "border-red-400 bg-red-50 focus:ring-red-500 focus:border-red-400" : "border-input bg-background focus:ring-ring focus:border-primary"}
+              ${errors.password ? "border-destructive bg-destructive/5 focus:ring-destructive focus:border-destructive" : "border-input bg-background focus:ring-ring focus:border-primary"}
             `}
           />
           <button
@@ -232,7 +232,7 @@ export function RegisterForm() {
         </div>
 
         {errors.password && (
-          <p id="password-error" role="alert" className="flex items-center gap-1.5 text-xs text-red-600 mt-1">
+          <p id="password-error" role="alert" className="flex items-center gap-1.5 text-xs text-destructive mt-1">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             {errors.password.message}
           </p>
@@ -268,12 +268,12 @@ export function RegisterForm() {
               transition-colors duration-150
               focus:outline-none focus:ring-2 focus:ring-offset-1
               disabled:opacity-50 disabled:cursor-not-allowed
-              ${errors.confirmPassword ? "border-red-400 bg-red-50 focus:ring-red-500 focus:border-red-400" : "border-input bg-background focus:ring-ring focus:border-primary"}
+              ${errors.confirmPassword ? "border-destructive bg-destructive/5 focus:ring-destructive focus:border-destructive" : "border-input bg-background focus:ring-ring focus:border-primary"}
             `}
           />
         </div>
         {errors.confirmPassword && (
-          <p id="confirmPassword-error" role="alert" className="flex items-center gap-1.5 text-xs text-red-600 mt-1">
+          <p id="confirmPassword-error" role="alert" className="flex items-center gap-1.5 text-xs text-destructive mt-1">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             {errors.confirmPassword.message}
           </p>
