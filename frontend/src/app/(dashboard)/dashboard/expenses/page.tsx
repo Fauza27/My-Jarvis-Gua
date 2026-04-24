@@ -1,12 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ExpenseForm } from "@/features/expense/components/ExpenseForm";
 import { ExpenseList } from "@/features/expense/components/ExpenseList";
 import { useExpenseSummaryAllTime } from "@/features/expense/hooks";
-import { ArrowLeft, TrendingUp, TrendingDown, Scale, Plus, X } from "lucide-react";
+import { Plus, X, SlidersHorizontal, RotateCcw, Search } from "lucide-react";
 
 const currencyFormatter = new Intl.NumberFormat("id-ID", {
   style: "currency",
@@ -22,8 +21,8 @@ export default function ExpensePage() {
   const summaryQuery = useExpenseSummaryAllTime();
   const summary = summaryQuery.data;
 
-  // ── Form Overlay State ──
   const [showForm, setShowForm] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const currentPage = useMemo(() => {
     const raw = searchParams.get("page");
@@ -169,134 +168,212 @@ export default function ExpensePage() {
     });
   };
 
-  const inputClass = "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
+  const hasActiveFilters = typeFilter !== "all" || categoryFilter || searchQuery || dateFromFilter || dateToFilter || sortBy !== "created_at" || sortOrder !== "desc";
+
+  const netBalance = summary?.net_balance ?? 0;
 
   return (
     <>
-      <div className="space-y-5 p-4 md:space-y-6 md:p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-foreground md:text-2xl">Expense Tracker</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Kelola pemasukan dan pengeluaran kamu.</p>
-          </div>
-          <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            Kembali
-          </Link>
+      <div className="p-4 md:p-6 lg:p-8 max-w-5xl mx-auto">
+        {/* ── Header ── */}
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-3xl font-extrabold text-foreground tracking-tight md:text-4xl">
+            Financial<br className="sm:hidden" />{" "}
+            <span className="text-primary">Operations</span>
+          </h1>
         </div>
 
-        {/* Summary Cards */}
+        {/* ── Summary row ── */}
+        {!summaryQuery.isLoading && !summaryQuery.isError && (
+          <div className="mb-6 grid grid-cols-3 gap-3 md:gap-4">
+            <div className="rounded-2xl bg-muted/30 p-3.5 md:p-4">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Income</p>
+              <p className="text-base font-bold text-foreground tabular-nums md:text-lg">
+                {currencyFormatter.format(summary?.total_income ?? 0)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-muted/30 p-3.5 md:p-4">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Expense</p>
+              <p className="text-base font-bold text-foreground tabular-nums md:text-lg">
+                {currencyFormatter.format(summary?.total_expense ?? 0)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-primary/8 p-3.5 md:p-4">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Balance</p>
+              <p className={`text-base font-bold tabular-nums md:text-lg ${netBalance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                {netBalance < 0 ? "−" : ""}{currencyFormatter.format(Math.abs(netBalance))}
+              </p>
+            </div>
+          </div>
+        )}
+
         {summaryQuery.isLoading && (
-          <div className="bg-card rounded-2xl border border-border p-4">
-            <p className="text-sm text-muted-foreground">Memuat ringkasan...</p>
+          <div className="mb-6 grid grid-cols-3 gap-3 md:gap-4">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="rounded-2xl bg-muted/20 p-4">
+                <div className="h-2.5 w-12 animate-pulse rounded bg-muted/40 mb-2" />
+                <div className="h-5 w-24 animate-pulse rounded bg-muted/40" />
+              </div>
+            ))}
           </div>
         )}
 
         {summaryQuery.isError && (
-          <div className="bg-card rounded-2xl border border-destructive/30 p-4">
-            <p className="text-sm text-destructive">{summaryQuery.error instanceof Error ? summaryQuery.error.message : "Gagal memuat ringkasan"}</p>
-          </div>
+          <p className="mb-6 text-sm text-destructive">
+            {summaryQuery.error instanceof Error ? summaryQuery.error.message : "Gagal memuat ringkasan"}
+          </p>
         )}
 
-        {!summaryQuery.isLoading && !summaryQuery.isError && (
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-card rounded-2xl border border-border p-3">
-              <div className="flex items-center gap-1.5 mb-1">
-                <TrendingUp className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Income</p>
-              </div>
-              <p className="text-sm font-semibold text-green-700 dark:text-green-400">{currencyFormatter.format(summary?.total_income ?? 0)}</p>
-            </div>
-            <div className="bg-card rounded-2xl border border-border p-3">
-              <div className="flex items-center gap-1.5 mb-1">
-                <TrendingDown className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Expense</p>
-              </div>
-              <p className="text-sm font-semibold text-red-700 dark:text-red-400">{currencyFormatter.format(summary?.total_expense ?? 0)}</p>
-            </div>
-            <div className="bg-card rounded-2xl border border-border p-3">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Scale className="w-3.5 h-3.5 text-primary" />
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Balance</p>
-              </div>
-              <p className="text-sm font-semibold text-primary">{currencyFormatter.format(summary?.net_balance ?? 0)}</p>
-            </div>
+        {/* ── Toolbar ── */}
+        <div className="mb-4 flex items-center gap-2">
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <input
+              value={searchInput}
+              onChange={(e) => {
+                handleSearchQueryChange(e.target.value);
+                if (e.target.value === "") handleImmediateSearchClear();
+              }}
+              placeholder="Cari transaksi..."
+              className="h-10 w-full rounded-xl border border-border/40 bg-muted/20 pl-9 pr-8 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:bg-background focus:border-border transition-all"
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => { setSearchInput(""); handleImmediateSearchClear(); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
-        )}
 
-        {/* Filters */}
-        <div className="bg-card rounded-2xl border border-border p-4">
-          <h2 className="text-sm font-semibold text-foreground mb-3">Filter Transaksi</h2>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-7">
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Tipe</label>
-              <select value={typeFilter} onChange={(e) => handleTypeFilterChange(e.target.value as any)} className={inputClass}>
-                <option value="all">Semua</option>
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Kategori</label>
-              <input
-                value={categoryInput}
-                onChange={(e) => {
-                  handleCategoryFilterChange(e.target.value);
-                  if (e.target.value === "") handleImmediateCategoryClear();
-                }}
-                placeholder="contoh: food"
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Cari</label>
-              <input
-                value={searchInput}
-                onChange={(e) => {
-                  handleSearchQueryChange(e.target.value);
-                  if (e.target.value === "") handleImmediateSearchClear();
-                }}
-                placeholder="deskripsi, kategori"
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Dari Tanggal</label>
-              <input type="date" value={dateFromFilter} onChange={(e) => handleDateFromChange(e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Sampai Tanggal</label>
-              <input type="date" value={dateToFilter} onChange={(e) => handleDateToChange(e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Urutkan</label>
-              <select value={sortBy} onChange={(e) => handleSortByChange(e.target.value as any)} className={inputClass}>
-                <option value="created_at">Waktu Dibuat</option>
-                <option value="transaction_date">Tgl Transaksi</option>
-                <option value="amount">Jumlah</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Arah</label>
-              <select value={sortOrder} onChange={(e) => handleSortOrderChange(e.target.value as any)} className={inputClass}>
-                <option value="desc">Terbaru</option>
-                <option value="asc">Terlama</option>
-              </select>
-            </div>
-          </div>
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs text-muted-foreground">Filter berlaku ke seluruh data.</p>
-              {isDateRangeInvalid && <p className="text-xs text-destructive mt-1">Rentang tanggal tidak valid.</p>}
-            </div>
-            <button type="button" onClick={handleResetFilters} className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-              Reset Filter
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowFilters(!showFilters)}
+            className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
+              showFilters || hasActiveFilters
+                ? "border-primary/30 bg-primary/10 text-primary"
+                : "border-border/40 bg-muted/20 text-muted-foreground hover:text-foreground"
+            }`}
+            title="Filter"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </button>
+
+          <div className="flex-1" />
+
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-foreground px-4 text-sm font-semibold text-background transition-opacity hover:opacity-80 active:opacity-70"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Tambah</span>
+          </button>
         </div>
 
-        {/* Transaction List */}
+        {/* ── Filter panel ── */}
+        {showFilters && (
+          <div className="mb-5 rounded-2xl bg-muted/15 p-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              <div>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tipe</label>
+                <div className="flex h-9 rounded-lg bg-muted/30 p-0.5 overflow-hidden">
+                  {(["all", "income", "expense"] as const).map((val) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => handleTypeFilterChange(val)}
+                      className={`flex-1 rounded-md text-xs font-medium transition-all ${
+                        typeFilter === val
+                          ? "bg-foreground text-background shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {val === "all" ? "All" : val === "income" ? "In" : "Out"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kategori</label>
+                <input
+                  value={categoryInput}
+                  onChange={(e) => {
+                    handleCategoryFilterChange(e.target.value);
+                    if (e.target.value === "") handleImmediateCategoryClear();
+                  }}
+                  placeholder="food, transport..."
+                  className="h-9 w-full rounded-lg bg-muted/30 px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring/30 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Dari</label>
+                <input
+                  type="date"
+                  value={dateFromFilter}
+                  onChange={(e) => handleDateFromChange(e.target.value)}
+                  className="h-9 w-full rounded-lg bg-muted/30 px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring/30 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sampai</label>
+                <input
+                  type="date"
+                  value={dateToFilter}
+                  onChange={(e) => handleDateToChange(e.target.value)}
+                  className="h-9 w-full rounded-lg bg-muted/30 px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring/30 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Urutkan</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => handleSortByChange(e.target.value as any)}
+                  className="h-9 w-full rounded-lg bg-muted/30 px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring/30 transition-all"
+                >
+                  <option value="created_at">Dibuat</option>
+                  <option value="transaction_date">Tanggal</option>
+                  <option value="amount">Jumlah</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Arah</label>
+                <select
+                  value={sortOrder}
+                  onChange={(e) => handleSortOrderChange(e.target.value as any)}
+                  className="h-9 w-full rounded-lg bg-muted/30 px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring/30 transition-all"
+                >
+                  <option value="desc">Terbaru</option>
+                  <option value="asc">Terlama</option>
+                </select>
+              </div>
+            </div>
+
+            {isDateRangeInvalid && (
+              <p className="mt-2 text-xs text-destructive">Rentang tanggal tidak valid.</p>
+            )}
+
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <RotateCcw className="h-3 w-3" />
+                Reset filter
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── Transaction List ── */}
         <ExpenseList
           limit={10}
           currentPage={currentPage}
@@ -311,43 +388,15 @@ export default function ExpensePage() {
         />
       </div>
 
-      {/* ── FAB (Floating Action Button) ── */}
-      {!showForm && (
-        <button
-          onClick={() => setShowForm(true)}
-          className="
-            fixed bottom-20 right-4 z-55 md:bottom-8 md:right-8
-            w-14 h-14 rounded-2xl
-            bg-primary text-primary-foreground
-            shadow-lg hover:shadow-xl
-            flex items-center justify-center
-            hover:bg-primary/90 active:scale-95
-            transition-all duration-200
-          "
-          title="Tambah Transaksi"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
-      )}
-
       {/* ── Form Overlay ── */}
       {showForm && (
         <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center" onClick={() => setShowForm(false)}>
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
-          {/* Form Container */}
           <div
-            className="
-              relative w-full sm:max-w-lg lg:max-w-2xl
-              bg-background border-t border-border sm:border sm:rounded-2xl
-              rounded-t-3xl
-              max-h-[85vh] overflow-y-auto
-              animate-in slide-in-from-bottom-4 duration-300
-            "
+            className="relative w-full sm:max-w-lg lg:max-w-2xl bg-background border-t border-border sm:border sm:rounded-2xl rounded-t-3xl max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Handle bar (mobile) */}
             <div className="sticky top-0 bg-background pt-3 pb-2 px-6 border-b border-border/50 rounded-t-3xl sm:rounded-t-2xl z-10">
               <div className="w-10 h-1 bg-border rounded-full mx-auto mb-3 sm:hidden" />
               <div className="flex items-center justify-between">
@@ -358,7 +407,6 @@ export default function ExpensePage() {
               </div>
             </div>
 
-            {/* Form */}
             <div className="p-6 pt-4">
               <ExpenseForm compact onSuccess={() => setShowForm(false)} />
             </div>

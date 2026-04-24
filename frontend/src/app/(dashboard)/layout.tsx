@@ -8,6 +8,7 @@ import { isTokenExpired } from "@/features/auth/utils";
 import { useMyProfile } from "@/features/profile/hooks";
 import Link from "next/link";
 import { CirclePlus, House, MessageCircle, Settings, UserRound } from "lucide-react";
+import { AppSidebar } from "@/components/AppSidebar";
 
 const navItems = [
   { href: "/dashboard", icon: House, label: "Home" },
@@ -54,43 +55,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl md:gap-6 md:px-4 lg:px-6">
-        {/* Desktop Sidebar */}
-        <aside className="hidden md:flex md:w-64 md:flex-col md:py-6 lg:w-72">
-          <Link href="/dashboard" className="inline-flex items-center gap-3 rounded-2xl border border-border/70 bg-card/60 p-3">
-            {avatar.avatar_url ? <Image src={avatar.avatar_url} alt="avatar profile" width={50} height={50} className="rounded-xl" /> : <Image src="/Logo-profile.png" alt="avatar profile" width={50} height={50} className="rounded-xl" />}
-            <div>
-              <p className="text-xs text-muted-foreground">Welcome back</p>
-              <h2 className="text-sm font-semibold text-foreground">{avatar.display_name}</h2>
+      {/* Desktop: Sidebar + Content */}
+      <div className="hidden md:flex md:h-screen md:overflow-hidden">
+        <AppSidebar avatar={avatar} />
+
+        {/* Main content area */}
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          {/* Header — only shown on non-chat routes */}
+          {!isChatRoute && (
+            <div className="px-6 pt-6 pb-4">
+              <header className="flex items-center justify-between">
+                {/* Empty header area for desktop — sidebar handles navigation */}
+              </header>
             </div>
-          </Link>
+          )}
 
-          <nav className="mt-4 rounded-2xl border border-border/70 bg-card/60 p-2">
-            <ul className="space-y-1">
-              {navItems.map(({ href, icon: Icon, label }) => {
-                const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
-                return (
-                  <li key={href}>
-                    <Link
-                      href={href}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors duration-200 ${isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
-                    >
-                      {label === "Chat" ? <Image src="/Logo-Chat.png" alt="Chat" width={56} height={56} className="h-9 w-9 object-contain" /> : <Icon className={`h-4.5 w-4.5 ${isActive ? "stroke-[2.5]" : ""}`} />}
-                      <span className="font-medium">{label}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-        </aside>
+          {/* Main content */}
+          <main className={`flex-1 overflow-y-auto ${isChatRoute ? "" : "px-6 pb-8"}`}>
+            <div className={`mx-auto w-full ${isChatRoute ? "h-full" : "max-w-6xl"}`}>{children}</div>
+          </main>
+        </div>
+      </div>
 
-        <div className="flex min-h-screen flex-1 flex-col">
+      {/* Mobile: Classic layout with bottom nav */}
+      <div className="md:hidden">
+        <div className="flex min-h-screen flex-col">
           {/* Header */}
           {!isChatRoute && (
-            <div className="p-4 pb-2 md:px-0 md:pt-6 md:pb-4">
+            <div className="p-4 pb-2">
               <header className="flex items-center justify-between">
-                <Link href="/dashboard" className="inline-flex items-center gap-3 group md:hidden">
+                <Link href="/dashboard" className="inline-flex items-center gap-3 group">
                   {avatar.avatar_url ? (
                     <Image src={avatar.avatar_url} alt="avatar profile" width={60} height={60} className="rounded-xl" />
                   ) : (
@@ -105,62 +99,62 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
 
           {/* Main content — padding bottom agar tidak tertutup navbar */}
-          <main className={`flex-1 ${isChatRoute ? "pb-20 md:pb-3" : "pb-28 md:pb-8"}`}>
-            <div className={`mx-auto w-full ${isChatRoute ? "" : "md:max-w-6xl"}`}>{children}</div>
+          <main className={`flex-1 ${isChatRoute ? "pb-20" : "pb-28"}`}>
+            <div className={`mx-auto w-full ${isChatRoute ? "" : ""}`}>{children}</div>
           </main>
         </div>
+
+        {/* Bottom Navigation — fixed full width */}
+        <nav className="fixed inset-x-0 bottom-0 z-50 rounded-t-lg border-t border-border/60 bg-card/95 backdrop-blur supports-backdrop-filter:bg-card/85">
+          <ul className="grid w-full grid-cols-5 items-end px-2 pt-2 pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
+            {/* Item Kiri */}
+            {leftItems.map(({ href, icon: Icon, label }) => {
+              const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
+              return (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1.5 transition-colors duration-200
+                      ${isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                  >
+                    <Icon className={`w-5 h-5 ${isActive ? "stroke-[2.5]" : ""}`} />
+                    <span className="text-[10px] font-medium">{label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+
+            {/* FAB Button Tengah */}
+            <li className="flex justify-center">
+              <Link
+                href="/dashboard/chat"
+                className="-mt-5 flex h-20 w-20 items-center justify-center rounded-full border border-primary/20 bg-primary text-primary-foreground
+                          shadow-lg shadow-primary/30 transition-transform duration-200 hover:scale-[1.03] active:scale-95"
+                aria-label="Tambah baru"
+              >
+                <Image src="/Logo-Chat.png" alt="Chat" width={56} height={56} className="h-17 w-17 object-contain" />
+              </Link>
+            </li>
+
+            {/* Item Kanan */}
+            {rightItems.map(({ href, icon: Icon, label }) => {
+              const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
+              return (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1.5 transition-colors duration-200
+                      ${isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                  >
+                    <Icon className={`w-5 h-5 ${isActive ? "stroke-[2.5]" : ""}`} />
+                    <span className="text-[10px] font-medium">{label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
       </div>
-
-      {/* Bottom Navigation — fixed full width */}
-      <nav className="fixed inset-x-0 bottom-0 z-50 rounded-t-lg border-t border-border/60 bg-card/95 backdrop-blur supports-backdrop-filter:bg-card/85 md:hidden">
-        <ul className="grid w-full grid-cols-5 items-end px-2 pt-2 pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
-          {/* Item Kiri */}
-          {leftItems.map(({ href, icon: Icon, label }) => {
-            const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
-            return (
-              <li key={href}>
-                <Link
-                  href={href}
-                  className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1.5 transition-colors duration-200
-                    ${isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
-                >
-                  <Icon className={`w-5 h-5 ${isActive ? "stroke-[2.5]" : ""}`} />
-                  <span className="text-[10px] font-medium">{label}</span>
-                </Link>
-              </li>
-            );
-          })}
-
-          {/* FAB Button Tengah */}
-          <li className="flex justify-center">
-            <Link
-              href="/dashboard/chat"
-              className="-mt-5 flex h-20 w-20 items-center justify-center rounded-full border border-primary/20 bg-primary text-primary-foreground
-                        shadow-lg shadow-primary/30 transition-transform duration-200 hover:scale-[1.03] active:scale-95"
-              aria-label="Tambah baru"
-            >
-              <Image src="/Logo-Chat.png" alt="Chat" width={56} height={56} className="h-17 w-17 object-contain" />
-            </Link>
-          </li>
-
-          {/* Item Kanan */}
-          {rightItems.map(({ href, icon: Icon, label }) => {
-            const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
-            return (
-              <li key={href}>
-                <Link
-                  href={href}
-                  className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1.5 transition-colors duration-200
-                    ${isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
-                >
-                  <Icon className={`w-5 h-5 ${isActive ? "stroke-[2.5]" : ""}`} />
-                  <span className="text-[10px] font-medium">{label}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
     </div>
   );
 }
