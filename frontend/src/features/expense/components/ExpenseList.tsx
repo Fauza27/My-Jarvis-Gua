@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Pencil, Trash2, ChevronLeft, ChevronRight, Utensils, Car, ShoppingBag, Clapperboard, HeartPulse, Wallet, FileText, GraduationCap, CircleDollarSign } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useDeleteExpense, useExpenses } from "../hooks";
 import { Expense } from "../types";
@@ -26,43 +26,18 @@ type ExpenseListProps = {
   sortOrder?: "asc" | "desc";
 };
 
-// Category → warm color mapping for avatar circles
-const categoryColors: Record<string, { bg: string; text: string }> = {
-  food: { bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-400" },
-  makanan: { bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-400" },
-  transport: { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-400" },
-  transportasi: { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-400" },
-  shopping: { bg: "bg-pink-100 dark:bg-pink-900/30", text: "text-pink-700 dark:text-pink-400" },
-  belanja: { bg: "bg-pink-100 dark:bg-pink-900/30", text: "text-pink-700 dark:text-pink-400" },
-  entertainment: { bg: "bg-violet-100 dark:bg-violet-900/30", text: "text-violet-700 dark:text-violet-400" },
-  hiburan: { bg: "bg-violet-100 dark:bg-violet-900/30", text: "text-violet-700 dark:text-violet-400" },
-  health: { bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-400" },
-  kesehatan: { bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-400" },
-  salary: { bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-700 dark:text-green-400" },
-  gaji: { bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-700 dark:text-green-400" },
-  bills: { bg: "bg-orange-100 dark:bg-orange-900/30", text: "text-orange-700 dark:text-orange-400" },
-  tagihan: { bg: "bg-orange-100 dark:bg-orange-900/30", text: "text-orange-700 dark:text-orange-400" },
-  education: { bg: "bg-cyan-100 dark:bg-cyan-900/30", text: "text-cyan-700 dark:text-cyan-400" },
-  pendidikan: { bg: "bg-cyan-100 dark:bg-cyan-900/30", text: "text-cyan-700 dark:text-cyan-400" },
-};
-
-const fallbackColors = [
-  { bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-400" },
-  { bg: "bg-rose-100 dark:bg-rose-900/30", text: "text-rose-700 dark:text-rose-400" },
-  { bg: "bg-sky-100 dark:bg-sky-900/30", text: "text-sky-700 dark:text-sky-400" },
-  { bg: "bg-teal-100 dark:bg-teal-900/30", text: "text-teal-700 dark:text-teal-400" },
-  { bg: "bg-indigo-100 dark:bg-indigo-900/30", text: "text-indigo-700 dark:text-indigo-400" },
-];
-
-function getCategoryColor(category: string) {
+function getCategoryIcon(category: string) {
+  if (!category) return CircleDollarSign;
   const key = category.toLowerCase().trim();
-  if (categoryColors[key]) return categoryColors[key];
-  // Hash-based fallback for consistent color per category
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) {
-    hash = key.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return fallbackColors[Math.abs(hash) % fallbackColors.length];
+  if (["food", "makanan"].includes(key)) return Utensils;
+  if (["transport", "transportasi"].includes(key)) return Car;
+  if (["shopping", "belanja"].includes(key)) return ShoppingBag;
+  if (["entertainment", "hiburan"].includes(key)) return Clapperboard;
+  if (["health", "kesehatan"].includes(key)) return HeartPulse;
+  if (["salary", "gaji"].includes(key)) return Wallet;
+  if (["bills", "tagihan"].includes(key)) return FileText;
+  if (["education", "pendidikan"].includes(key)) return GraduationCap;
+  return CircleDollarSign;
 }
 
 function formatDate(dateStr: string | undefined): string {
@@ -81,51 +56,53 @@ function formatDate(dateStr: string | undefined): string {
 
 function ExpenseItem({ item, onDelete, onEdit, isDeleting }: { item: Expense; onDelete: (id: string) => void; onEdit: (item: Expense) => void; isDeleting: boolean }) {
   const isIncome = item.type === "income";
-  const color = getCategoryColor(item.category);
+  const IconComponent = getCategoryIcon(item.category);
 
   return (
-    <div className="group flex items-center gap-3.5 py-3 px-2 transition-colors hover:bg-muted/20 rounded-xl -mx-2">
+    <div className="group flex items-center gap-4 py-3.5 px-3 transition-colors hover:bg-muted/30 border-b border-border/40 last:border-0">
       {/* Category avatar */}
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${color.bg} ${color.text}`}>
-        {item.category?.charAt(0)?.toUpperCase() || "?"}
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted/40 text-muted-foreground border border-border/50 shadow-sm">
+        <IconComponent className="h-4 w-4" />
       </div>
 
       {/* Content */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-foreground">
+        <p className="truncate text-sm font-semibold text-foreground">
           {item.description || item.category}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        <p className="text-xs text-muted-foreground mt-0.5 font-medium">
           {item.transaction_date ? formatDate(item.transaction_date) : item.category}
         </p>
       </div>
 
-      {/* Amount */}
-      <p className={`shrink-0 text-sm font-semibold tabular-nums ${
-        isIncome ? "text-green-600 dark:text-green-400" : "text-foreground"
-      }`}>
-        {isIncome ? "+" : "−"}{currencyFormatter.format(item.amount)}
-      </p>
+      {/* Amount & Actions Container */}
+      <div className="flex shrink-0 items-center gap-3">
+        <p className={`text-sm font-bold tabular-nums tracking-tight ${
+          isIncome ? "text-success" : "text-foreground"
+        }`}>
+          {isIncome ? "+" : "−"}{currencyFormatter.format(item.amount)}
+        </p>
 
-      {/* Actions — appear on hover */}
-      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-        <button
-          type="button"
-          onClick={() => onEdit(item)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground hover:bg-muted/50"
-          title="Edit"
-        >
-          <Pencil className="h-3 w-3" />
-        </button>
-        <button
-          type="button"
-          onClick={() => onDelete(item.id)}
-          disabled={isDeleting}
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-destructive hover:bg-destructive/10 disabled:opacity-50"
-          title="Hapus"
-        >
-          <Trash2 className="h-3 w-3" />
-        </button>
+        {/* Actions — appear on hover */}
+        <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <button
+            type="button"
+            onClick={() => onEdit(item)}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground hover:bg-muted"
+            title="Edit"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(item.id)}
+            disabled={isDeleting}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-destructive hover:bg-destructive/10 disabled:opacity-50"
+            title="Hapus"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -199,13 +176,13 @@ export function ExpenseList({
     return (
       <div className="space-y-1">
         {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className="flex items-center gap-3.5 py-3 px-2">
-            <div className="h-10 w-10 animate-pulse rounded-full bg-muted/40" />
+          <div key={i} className="flex items-center gap-4 py-3.5 px-3 border-b border-border/30 last:border-0">
+            <div className="h-10 w-10 animate-pulse rounded-lg bg-muted/40" />
             <div className="flex-1 space-y-2">
               <div className="h-3.5 w-2/5 animate-pulse rounded-md bg-muted/40" />
               <div className="h-2.5 w-1/4 animate-pulse rounded-md bg-muted/30" />
             </div>
-            <div className="h-3.5 w-20 animate-pulse rounded-md bg-muted/40" />
+            <div className="h-4 w-20 animate-pulse rounded-md bg-muted/40" />
           </div>
         ))}
       </div>
