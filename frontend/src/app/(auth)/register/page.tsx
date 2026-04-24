@@ -31,19 +31,26 @@ export default function RegisterPage() {
   };
   return (
     <div className="w-full bg-background page-transition">
-      <div className="grid lg:grid-cols-2 min-h-screen">
+      <div className="grid lg:grid-cols-2 ">
         {/* ── Left Side: Illustration ──────────────────────────────────── */}
-        <aside className="hidden lg:flex items-center justify-center bg-muted/30 p-8 slide-in-left">
-          <div className="relative w-full max-w-lg text-center">
+        <aside className="hidden lg:flex items-center justify-center bg-muted/30 slide-in-left">
+          <div className="relative w-full text-center ">
             {/* Headline */}
-            <h1 className="text-3xl font-bold text-foreground tracking-tight mb-3">Join My Jarvis Gua</h1>
+            <h1 className="text-3xl font-bold text-foreground tracking-tight mb-3">My Jarvis Gua</h1>
 
             {/* Subheading */}
-            <p className="text-base text-muted-foreground mb-8">Create your account and start your journey with your personalized AI Co-Pilot</p>
+            <p className="text-base text-muted-foreground mb-8">Create your account to access your personalized Co-Pilot</p>
 
             {/* Image */}
-            <div className="relative">
-              <Image src="/Logo-register-fullBody.png" alt="My Jarvis Gua - Register Illustration" width={400} height={400} className="mx-auto" priority />
+            <div className="relative flex items-center justify-center">
+              <Image 
+                src="/Logo-register-fullBody.png" 
+                alt="My Jarvis Gua - Register Illustration" 
+                width={1780} 
+                height={1502} 
+                className="mx-auto"
+                priority 
+              />
             </div>
           </div>
         </aside>

@@ -45,24 +45,24 @@ function PasswordStrengthBar({ password }: { password: string }) {
   const config = strengthConfig[strength as keyof typeof strengthConfig];
 
   return (
-    <div className="space-y-2 mt-2">
+    <div className="space-y-1 mt-1">
       {/* Bar kekuatan */}
       <div className="flex gap-1 items-center">
         {[1, 2, 3, 4, 5].map((level) => (
           <div
             key={level}
-            className={`h-1.5 flex-1 rounded-full transition-colors duration-300
+            className={`h-0.5 flex-1 rounded-full transition-colors duration-300
               ${strength >= level ? config.color : "bg-muted"}`}
           />
         ))}
-        <span className={`text-xs ml-2 font-medium ${strength === 1 || strength === 2 ? "text-red-600" : strength === 3 ? "text-yellow-600" : strength >= 4 ? "text-green-600" : "text-muted-foreground"}`}>{config.label}</span>
+        <span className={`text-[10px] ml-1.5 font-medium ${strength === 1 || strength === 2 ? "text-red-600" : strength === 3 ? "text-yellow-600" : strength >= 4 ? "text-green-600" : "text-muted-foreground"}`}>{config.label}</span>
       </div>
 
-      {/* Checklist requirements */}
-      <ul className="space-y-1">
+      {/* Checklist requirements - ultra compact */}
+      <ul className="space-y-0">
         {requirements.map((req) => (
-          <li key={req.label} className="flex items-center gap-1.5 text-xs">
-            {req.met ? <Check className="w-3 h-3 text-green-500 shrink-0" /> : <X className="w-3 h-3 text-muted-foreground shrink-0" />}
+          <li key={req.label} className="flex items-center gap-1 text-[10px]">
+            {req.met ? <Check className="w-2.5 h-2.5 text-green-500 shrink-0" /> : <X className="w-2.5 h-2.5 text-muted-foreground shrink-0" />}
             <span className={req.met ? "text-green-700" : "text-muted-foreground"}>{req.label}</span>
           </li>
         ))}
@@ -165,7 +165,6 @@ export function RegisterForm() {
             id="email"
             type="email"
             autoComplete="email"
-            autoFocus
             placeholder="email@gmail.com"
             disabled={isDisabled}
             aria-invalid={!!errors.email}
@@ -239,10 +238,12 @@ export function RegisterForm() {
           </p>
         )}
 
-        {/* Password Strength Indicator */}
-        <div id="password-strength">
-          <PasswordStrengthBar password={passwordValue} />
-        </div>
+        {/* Password Strength Indicator - Compact version */}
+        {!errors.password && passwordValue && (
+          <div id="password-strength" className="pt-1">
+            <PasswordStrengthBar password={passwordValue} />
+          </div>
+        )}
       </div>
 
       {/* Confirm Password Field */}
@@ -262,7 +263,7 @@ export function RegisterForm() {
             aria-invalid={!!errors.confirmPassword}
             aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
             className={`
-              w-full h-11 pl-10 pr-3.5 rounded-lg border text-sm
+              w-full h-11 pl-10 pr-11 rounded-lg border text-sm
               text-foreground placeholder:text-muted-foreground
               transition-colors duration-150
               focus:outline-none focus:ring-2 focus:ring-offset-1

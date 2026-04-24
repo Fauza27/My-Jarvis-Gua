@@ -143,7 +143,7 @@ export default function LoginPage() {
 
         {/* ── Right Side: Illustration ──────────────────────────────────── */}
         <aside className="hidden lg:flex items-center justify-center bg-muted/30 slide-in-right">
-          <div className="relative w-full max-w-lg text-center">
+          <div className="relative w-full max-w-2xl text-center px-4">
             {/* Headline */}
             <h1 className="text-3xl font-bold text-foreground tracking-tight mb-3">My Jarvis Gua</h1>
 
@@ -151,7 +151,7 @@ export default function LoginPage() {
             <p className="text-base text-muted-foreground mb-8">Login to your account to access your personalized Co-Pilot</p>
 
             {/* Image */}
-            <div className="relative">
+            <div className="relative flex items-center justify-center">
               <Image src="/Login-FullBody.png" alt="My Jarvis Gua - AI Assistant Illustration" width={400} height={400} className="mx-auto" priority />
             </div>
           </div>

@@ -100,7 +100,6 @@ export function LoginForm() {
             id="email"
             type="email"
             autoComplete="email"
-            autoFocus
             placeholder="email@gmail.com"
             disabled={isDisabled}
             aria-invalid={!!errors.email}
