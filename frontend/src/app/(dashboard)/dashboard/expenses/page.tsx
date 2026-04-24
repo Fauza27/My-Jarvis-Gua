@@ -176,66 +176,73 @@ export default function ExpensePage() {
     <>
       <div className="p-4 md:p-6 lg:p-8 max-w-5xl mx-auto">
         {/* ── Header ── */}
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-3xl font-extrabold text-foreground tracking-tight md:text-4xl">
-            Financial<br className="sm:hidden" />{" "}
-            <span className="text-primary">Operations</span>
+        <div className="mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+            Financial Operations
           </h1>
+          <p className="text-sm text-muted-foreground mt-1">Overview of your recent transactions</p>
         </div>
 
         {/* ── Summary row ── */}
         {!summaryQuery.isLoading && !summaryQuery.isError && (
-          <div className="mb-6 grid grid-cols-3 gap-3 md:gap-4">
-            <div className="rounded-2xl bg-muted/30 p-3.5 md:p-4">
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Income</p>
-              <p className="text-base font-bold text-foreground tabular-nums md:text-lg">
+          <div className="mb-8 rounded-xl border border-border/40 bg-card shadow-sm overflow-hidden flex flex-col sm:flex-row sm:divide-x divide-y sm:divide-y-0 divide-border/40">
+            <div className="flex-1 p-5">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">Total Income</p>
+              <p className="text-2xl font-bold text-foreground tabular-nums tracking-tight">
                 {currencyFormatter.format(summary?.total_income ?? 0)}
               </p>
             </div>
-            <div className="rounded-2xl bg-muted/30 p-3.5 md:p-4">
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Expense</p>
-              <p className="text-base font-bold text-foreground tabular-nums md:text-lg">
+            <div className="flex-1 p-5">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">Total Expense</p>
+              <p className="text-2xl font-bold text-foreground tabular-nums tracking-tight">
                 {currencyFormatter.format(summary?.total_expense ?? 0)}
               </p>
             </div>
-            <div className="rounded-2xl bg-primary/8 p-3.5 md:p-4">
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Balance</p>
-              <p className={`text-base font-bold tabular-nums md:text-lg ${netBalance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                {netBalance < 0 ? "−" : ""}{currencyFormatter.format(Math.abs(netBalance))}
-              </p>
+            <div className="flex-1 p-5 bg-muted/5">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">Net Balance</p>
+              <div className="flex items-baseline gap-2">
+                <p className={`text-2xl font-bold tabular-nums tracking-tight ${netBalance >= 0 ? "text-foreground" : "text-destructive"}`}>
+                  {netBalance < 0 ? "−" : ""}{currencyFormatter.format(Math.abs(netBalance))}
+                </p>
+                {netBalance !== 0 && (
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {netBalance >= 0 ? "Surplus" : "Deficit"}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         )}
 
         {summaryQuery.isLoading && (
-          <div className="mb-6 grid grid-cols-3 gap-3 md:gap-4">
+          <div className="mb-8 rounded-xl border border-border/40 bg-card shadow-sm overflow-hidden flex flex-col sm:flex-row sm:divide-x divide-y sm:divide-y-0 divide-border/40">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="rounded-2xl bg-muted/20 p-4">
-                <div className="h-2.5 w-12 animate-pulse rounded bg-muted/40 mb-2" />
-                <div className="h-5 w-24 animate-pulse rounded bg-muted/40" />
+              <div key={i} className="flex-1 p-5">
+                <div className="h-3 w-16 animate-pulse rounded bg-muted/40 mb-3" />
+                <div className="h-7 w-28 animate-pulse rounded bg-muted/40" />
               </div>
             ))}
           </div>
         )}
 
         {summaryQuery.isError && (
-          <p className="mb-6 text-sm text-destructive">
+          <p className="mb-8 text-sm text-destructive">
             {summaryQuery.error instanceof Error ? summaryQuery.error.message : "Gagal memuat ringkasan"}
           </p>
         )}
 
         {/* ── Toolbar ── */}
-        <div className="mb-4 flex items-center gap-2">
-          <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <input
               value={searchInput}
               onChange={(e) => {
                 handleSearchQueryChange(e.target.value);
                 if (e.target.value === "") handleImmediateSearchClear();
               }}
-              placeholder="Cari transaksi..."
-              className="h-10 w-full rounded-xl border border-border/40 bg-muted/20 pl-9 pr-8 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:bg-background focus:border-border transition-all"
+              placeholder="Search transactions..."
+              className="h-9 w-full rounded-lg border border-border/40 bg-background pl-9 pr-8 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring transition-all shadow-sm"
             />
             {searchInput && (
               <button
@@ -243,34 +250,34 @@ export default function ExpensePage() {
                 onClick={() => { setSearchInput(""); handleImmediateSearchClear(); }}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowFilters(!showFilters)}
-            className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
-              showFilters || hasActiveFilters
-                ? "border-primary/30 bg-primary/10 text-primary"
-                : "border-border/40 bg-muted/20 text-muted-foreground hover:text-foreground"
-            }`}
-            title="Filter"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`inline-flex h-9 px-3 items-center gap-2 rounded-lg border text-sm font-medium transition-colors shadow-sm ${
+                showFilters || hasActiveFilters
+                  ? "border-primary/30 bg-primary/5 text-primary"
+                  : "border-border/40 bg-background text-foreground hover:bg-muted/50"
+              }`}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              <span>Filter</span>
+            </button>
 
-          <div className="flex-1" />
-
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-foreground px-4 text-sm font-semibold text-background transition-opacity hover:opacity-80 active:opacity-70"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Tambah</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setShowForm(true)}
+              className="inline-flex h-9 px-4 items-center gap-2 rounded-lg bg-foreground text-background text-sm font-medium hover:bg-foreground/90 transition-colors shadow-sm"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Tambah Transaksi</span>
+            </button>
+          </div>
         </div>
 
         {/* ── Filter panel ── */}
@@ -391,7 +398,7 @@ export default function ExpensePage() {
       {/* ── Form Overlay ── */}
       {showForm && (
         <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center" onClick={() => setShowForm(false)}>
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" />
 
           <div
             className="relative w-full sm:max-w-lg lg:max-w-2xl bg-background border-t border-border sm:border sm:rounded-2xl rounded-t-3xl max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-300"

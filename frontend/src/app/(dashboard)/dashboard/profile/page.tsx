@@ -170,7 +170,7 @@ export default function ProfilePage() {
       {showTelegramModal && (
         <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center" onClick={() => setShowTelegramModal(false)}>
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" />
 
           {/* Modal */}
           <div
@@ -205,7 +205,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-3">
                   <code className="bg-primary/10 text-primary px-4 py-2 rounded-lg text-lg font-mono font-bold tracking-wider">{connectCode}</code>
                   <button onClick={handleCopy} className="p-2 rounded-lg hover:bg-muted-foreground/10 transition-colors text-muted-foreground hover:text-foreground" title="Copy command">
-                    {isCopied ? <Check className="w-4 h-4 text-green-600 dark:text-green-400" /> : <Copy className="w-4 h-4" />}
+                    {isCopied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
                   </button>
                 </div>
                 <p className="text-sm text-muted-foreground mt-3">

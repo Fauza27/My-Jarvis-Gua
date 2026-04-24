@@ -141,7 +141,7 @@ export default function AddPage() {
       {selectedOption && (
         <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center" onClick={() => setSelectedOption(null)}>
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" />
 
           {/* Form Container */}
           <div

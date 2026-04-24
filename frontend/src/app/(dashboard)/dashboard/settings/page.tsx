@@ -30,7 +30,7 @@ function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean
     >
       <span
         className={`
-          inline-block h-4 w-4 rounded-full bg-white shadow-sm
+          inline-block h-4 w-4 rounded-full bg-background shadow-sm
           transition-transform duration-200
           ${enabled ? "translate-x-6" : "translate-x-1"}
         `}
