@@ -137,7 +137,7 @@ export default function AuthCallbackPage() {
 
         {error ? (
           <>
-            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-500" />
+            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
             <h1 className="text-2xl font-bold text-foreground mb-2">Authentication Failed</h1>
             <p className="text-muted-foreground mb-4">{error}</p>
             <p className="text-sm text-muted-foreground">Redirecting to login...</p>

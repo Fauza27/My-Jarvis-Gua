@@ -115,7 +115,7 @@ function ResetPasswordContent() {
           <div className="inline-flex items-center justify-center mb-4">
             <Image src="/Login-Head.png" alt="My Jarvis Gua Logo" width={64} height={64} className="rounded-xl" />
           </div>
-          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-500" />
+          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
           <h1 className="text-2xl font-bold text-foreground mb-2">Reset Password Failed</h1>
           <p className="text-muted-foreground mb-4">{error}</p>
           <button onClick={() => router.push("/forgot-password")} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90">
@@ -133,7 +133,7 @@ function ResetPasswordContent() {
           <div className="inline-flex items-center justify-center mb-4">
             <Image src="/Login-Head.png" alt="My Jarvis Gua Logo" width={64} height={64} className="rounded-xl" />
           </div>
-          <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-green-500" />
+          <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-success" />
           <h1 className="text-2xl font-bold text-foreground mb-2">Password Reset Successful</h1>
           <p className="text-muted-foreground">Redirecting to login...</p>
         </div>
@@ -173,7 +173,7 @@ function ResetPasswordContent() {
                   transition-colors duration-150
                   focus:outline-none focus:ring-2 focus:ring-offset-1
                   disabled:opacity-50 disabled:cursor-not-allowed
-                  ${errors.password ? "border-red-400 bg-red-50 focus:ring-red-500" : "border-input bg-background focus:ring-ring"}
+                  ${errors.password ? "border-destructive bg-destructive/5 focus:ring-destructive focus:border-destructive" : "border-input bg-background focus:ring-ring"}
                 `}
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)} disabled={isLoading} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded text-foreground hover:text-muted-foreground">
@@ -181,7 +181,7 @@ function ResetPasswordContent() {
               </button>
             </div>
             {errors.password && (
-              <p className="flex items-center gap-1.5 text-xs text-red-600">
+              <p className="flex items-center gap-1.5 text-xs text-destructive">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 {errors.password.message}
               </p>
@@ -208,12 +208,12 @@ function ResetPasswordContent() {
                   transition-colors duration-150
                   focus:outline-none focus:ring-2 focus:ring-offset-1
                   disabled:opacity-50 disabled:cursor-not-allowed
-                  ${errors.confirmPassword ? "border-red-400 bg-red-50 focus:ring-red-500" : "border-input bg-background focus:ring-ring"}
+                  ${errors.confirmPassword ? "border-destructive bg-destructive/5 focus:ring-destructive focus:border-destructive" : "border-input bg-background focus:ring-ring"}
                 `}
               />
             </div>
             {errors.confirmPassword && (
-              <p className="flex items-center gap-1.5 text-xs text-red-600">
+              <p className="flex items-center gap-1.5 text-xs text-destructive">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 {errors.confirmPassword.message}
               </p>
