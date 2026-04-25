@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 
@@ -8,11 +9,12 @@ sys.path.insert(0, str(backend_dir))
 import uvicorn
 
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
     uvicorn.run(
         "app.core.application:create_app",
         host="0.0.0.0",
-        port=8000,
+        port=port,
         reload=True,
         factory=True,
         reload_dirs=[str(backend_dir / "app")],
-    )
+    )

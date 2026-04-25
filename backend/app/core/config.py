@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     
     # Telegram
     TELEGRAM_BOT_TOKEN: str
+    TELEGRAM_WEBHOOK_URL: str = ""          # e.g. "https://life-os-xxxxx.run.app"
+    TELEGRAM_WEBHOOK_SECRET: str = ""       # Secret token to validate webhook requests
+    TELEGRAM_WEBHOOK_PATH: str = "/api/telegram/webhook"
     
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3001"]
