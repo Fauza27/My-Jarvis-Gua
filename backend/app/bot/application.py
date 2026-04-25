@@ -103,7 +103,8 @@ def create_bot() -> Application:
         .token(settings.TELEGRAM_BOT_TOKEN)
         # Required with ConversationHandler to avoid race conditions.
         .concurrent_updates(False)
-        .post_init(post_init)
+        # NOTE: post_init is NOT chained here because in webhook mode,
+        # bot commands are set manually during FastAPI lifespan startup.
         .build()
     )
 
