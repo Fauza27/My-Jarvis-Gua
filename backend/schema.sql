@@ -100,7 +100,7 @@ RETURNS VOID AS $$
 BEGIN
     UPDATE expenses
     SET deleted_at = NULL
-    WHERE id = expense_id;
+    WHERE id = expense_id AND user_id = auth.uid();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
