@@ -60,6 +60,8 @@ jobs:
           # Build frontend image. Ensure it can communicate with backend
           docker build \
             --build-arg NEXT_PUBLIC_API_URL='${{ secrets.NEXT_PUBLIC_API_URL }}' \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL='${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}' \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY='${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}' \
             -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }} \
             ./frontend
 
