@@ -1,4 +1,5 @@
 from app.core.exceptions import ValidationError
+from fastapi import BackgroundTasks
 import csv
 import io
 from app.models.expense import (
@@ -60,7 +61,12 @@ class ExpenseService:
         expense_data = self._expense_repo.find_by_id(expense_id, user_id)
         return ExpenseOut.from_db(expense_data)
 
-    def create_expense(self, user_id: str, request: CreateExpenseRequest) -> ExpenseOut:
+    def create_expense(
+        self,
+        user_id: str,
+        request: CreateExpenseRequest,
+        background_tasks: BackgroundTasks | None = None,
+    ) -> ExpenseOut:
         """Create a new expense."""
         expense_data = {
             "user_id":          user_id,
@@ -77,15 +83,28 @@ class ExpenseService:
 
         created_expense = self._expense_repo.create(expense_data)
 
-        self._embed_task_if_available(
-            expense_id=created_expense["id"],
-            amount=created_expense["amount"],
-            type=created_expense["type"],
-            description=created_expense["description"],
-            category=created_expense["category"],
-            subcategory=created_expense["subcategory"],
-            payment_method=created_expense["payment_method"],
-        )
+        if self._embedding_service is not None:
+            if background_tasks is not None:
+                background_tasks.add_task(
+                    self._embedding_service.generate_for_expenses_safe,
+                    expense_id=created_expense["id"],
+                    amount=created_expense["amount"],
+                    type=created_expense["type"],
+                    description=created_expense["description"],
+                    category=created_expense["category"],
+                    subcategory=created_expense["subcategory"],
+                    payment_method=created_expense["payment_method"],
+                )
+            else:
+                self._embed_task_if_available(
+                    expense_id=created_expense["id"],
+                    amount=created_expense["amount"],
+                    type=created_expense["type"],
+                    description=created_expense["description"],
+                    category=created_expense["category"],
+                    subcategory=created_expense["subcategory"],
+                    payment_method=created_expense["payment_method"],
+                )
         return ExpenseOut.from_db(created_expense)
 
     def update_expense(
@@ -93,6 +112,7 @@ class ExpenseService:
         user_id: str,
         expense_id: str,
         request: UpdateExpenseRequest,
+        background_tasks: BackgroundTasks | None = None,
     ) -> ExpenseOut:
         """Partially update an existing expense."""
         update_payload = request.to_update_dict()
@@ -102,16 +122,30 @@ class ExpenseService:
 
         updated_expense = self._expense_repo.update(expense_id, user_id, update_payload)
         
-        if request.amount or request.type or request.description or request.category or request.subcategory or request.payment_method:
-            self._embed_task_if_available(
-                expense_id=expense_id,
-                amount=updated_expense["amount"],
-                type=updated_expense["type"],
-                description=updated_expense["description"],
-                category=updated_expense["category"],
-                subcategory=updated_expense["subcategory"],
-                payment_method=updated_expense["payment_method"],
-            )
+        embedded_fields = {"amount", "type", "description", "category", "subcategory", "payment_method"}
+        if any(field in update_payload for field in embedded_fields):
+            if self._embedding_service is not None:
+                if background_tasks is not None:
+                    background_tasks.add_task(
+                        self._embedding_service.generate_for_expenses_safe,
+                        expense_id=expense_id,
+                        amount=updated_expense["amount"],
+                        type=updated_expense["type"],
+                        description=updated_expense["description"],
+                        category=updated_expense["category"],
+                        subcategory=updated_expense["subcategory"],
+                        payment_method=updated_expense["payment_method"],
+                    )
+                else:
+                    self._embed_task_if_available(
+                        expense_id=expense_id,
+                        amount=updated_expense["amount"],
+                        type=updated_expense["type"],
+                        description=updated_expense["description"],
+                        category=updated_expense["category"],
+                        subcategory=updated_expense["subcategory"],
+                        payment_method=updated_expense["payment_method"],
+                    )
         return ExpenseOut.from_db(updated_expense)
 
     def delete_expense(self, user_id: str, expense_id: str) -> None: 

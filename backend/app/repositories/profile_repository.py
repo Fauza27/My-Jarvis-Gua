@@ -1,7 +1,11 @@
 from typing import Optional
+import logging
 from supabase import Client
+from postgrest.exceptions import APIError
 
 from app.core.exceptions import NotFoundError, TelegramAlreadyLinkedError
+
+logger = logging.getLogger(__name__)
 
 class ProfileRepository:
     """
@@ -34,10 +38,17 @@ class ProfileRepository:
             if not response.data:
                 raise NotFoundError(f"Profile for user '{user_id}' not found")
             return response.data
+        except NotFoundError:
+            raise
+        except APIError as e:
+            # PostgREST returns PGRST116 when .single() finds 0 rows
+            if "PGRST116" in str(e):
+                raise NotFoundError(f"Profile for user '{user_id}' not found") from e
+            logger.error("Database error fetching profile for user '%s': %s", user_id, str(e)[:200])
+            raise
         except Exception as e:
-            if "NotFoundError" in type(e).__name__:
-                raise
-            raise NotFoundError(f"Profile for user '{user_id}' not found")
+            logger.error("Unexpected error fetching profile for user '%s': %s - %s", user_id, type(e).__name__, str(e)[:200])
+            raise
     
     def find_by_telegram_id(self, telegram_chat_id: int) -> Optional[dict]:
         """

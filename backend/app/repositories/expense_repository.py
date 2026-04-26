@@ -14,6 +14,7 @@
 # );
 
 from calendar import monthrange
+import logging
 from supabase import Client
 from postgrest.exceptions import APIError
 
@@ -32,6 +33,24 @@ class ExpenseRepository:
 
     def __init__(self, client: Client):
         self._client = client
+        self._logger = logging.getLogger(__name__)
+
+    def _summary_via_rpc(self, function_name: str, params: dict) -> dict | None:
+        try:
+            response = self._client.rpc(function_name, params).execute()
+        except Exception as exc:
+            self._logger.warning("Summary RPC failed (%s): %s", function_name, str(exc)[:100])
+            return None
+
+        if not response.data:
+            return None
+
+        row = response.data[0]
+        return {
+            "total_income": float(row.get("total_income") or 0),
+            "total_expense": float(row.get("total_expense") or 0),
+            "net_balance": float(row.get("net_balance") or 0),
+        }
 
     def _apply_list_filters(
         self,
@@ -274,6 +293,13 @@ class ExpenseRepository:
     # =========================================================================
     def get_summary_all_time(self, user_id: str) -> dict:
         """Get all-time income/expense summary for a user."""
+        rpc_result = self._summary_via_rpc(
+            "expense_summary_all_time",
+            {"user_id_param": user_id},
+        )
+        if rpc_result is not None:
+            return rpc_result
+
         response = (
             self._client
             .table(self.VIEW)
@@ -329,6 +355,17 @@ class ExpenseRepository:
         Returns:
             Dict with keys: total_income, total_expense, net_balance.
         """
+        rpc_result = self._summary_via_rpc(
+            "expense_summary_by_month",
+            {
+                "user_id_param": user_id,
+                "month_param": month,
+                "year_param": year,
+            },
+        )
+        if rpc_result is not None:
+            return rpc_result
+
         last_day   = monthrange(year, month)[1]
         start_date = f"{year}-{month:02d}-01"
         end_date   = f"{year}-{month:02d}-{last_day}"
@@ -362,6 +399,16 @@ class ExpenseRepository:
         Returns:
             Dict with keys: total_income, total_expense, net_balance.
         """
+        rpc_result = self._summary_via_rpc(
+            "expense_summary_by_year",
+            {
+                "user_id_param": user_id,
+                "year_param": year,
+            },
+        )
+        if rpc_result is not None:
+            return rpc_result
+
         start_date = f"{year}-01-01"
         end_date   = f"{year}-12-31"
 
