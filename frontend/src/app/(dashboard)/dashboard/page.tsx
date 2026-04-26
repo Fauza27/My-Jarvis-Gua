@@ -12,11 +12,11 @@ export default function DashboardPage() {
       {/* Feature Cards */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-4">
         <DashboardCard title="Finance Tracker" description="Kelola pemasukan & pengeluaran" iconImage="/Logo-Finance-Tracker.png" href="/dashboard/expenses" />
-        <DashboardCard title="Catat Tugas" description="To-do list & manajemen tugas" iconImage="/Logo-Finance-Tracker.png" href="/dashboard/tasks" />
-        <DashboardCard title="Catat Makanan" description="Tracking nutrisi harian" iconImage="/Logo-Finance-Tracker.png" href="/dashboard/nutrition" />
-        <DashboardCard title="Olahraga" description="Log aktivitas & workout" iconImage="/Logo-Finance-Tracker.png" href="/dashboard/fitness" />
-        <DashboardCard title="Jurnal" description="Catatan harian & refleksi" iconImage="/Logo-Finance-Tracker.png" href="/dashboard/journal" />
-        <DashboardCard title="Goals" description="Target & progress tracker" iconImage="/Logo-Finance-Tracker.png" href="/dashboard/goals" />
+        <DashboardCard title="Catat Tugas" description="To-do list & manajemen tugas" iconImage="/Logo-Finance-Tracker.png" href="/dashboard/tasks" disabled />
+        <DashboardCard title="Catat Makanan" description="Tracking nutrisi harian" iconImage="/Logo-Finance-Tracker.png" href="/dashboard/nutrition" disabled />
+        <DashboardCard title="Olahraga" description="Log aktivitas & workout" iconImage="/Logo-Finance-Tracker.png" href="/dashboard/fitness" disabled />
+        <DashboardCard title="Jurnal" description="Catatan harian & refleksi" iconImage="/Logo-Finance-Tracker.png" href="/dashboard/journal" disabled />
+        <DashboardCard title="Goals" description="Target & progress tracker" iconImage="/Logo-Finance-Tracker.png" href="/dashboard/goals" disabled />
       </div>
     </div>
   );

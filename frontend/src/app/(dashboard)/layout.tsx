@@ -35,16 +35,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return;
     }
 
-    if (!isAuthenticated || !accessToken || isTokenExpired(expiresAt)) {
+    if (!isAuthenticated || isTokenExpired(expiresAt)) {
       router.replace("/login");
     }
-  }, [hasHydrated, isAuthenticated, accessToken, expiresAt, router]);
+  }, [hasHydrated, isAuthenticated, expiresAt, router]);
 
   if (!hasHydrated) {
     return null;
   }
 
-  if (!isAuthenticated || !accessToken || isTokenExpired(expiresAt)) {
+  if (!isAuthenticated || isTokenExpired(expiresAt)) {
     return null;
   }
 
