@@ -1,6 +1,6 @@
 import { cache } from "react";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const BASE_URL = typeof window === "undefined" ? process.env.NEXT_PUBLIC_API_URL : "";
 
 type HomeResponse = {
   message: string;
@@ -11,7 +11,7 @@ const FALLBACK_HOME: HomeResponse = {
 };
 
 export const getHome = cache(async () => {
-  if (!BASE_URL) {
+  if (typeof window === "undefined" && !BASE_URL) {
     return FALLBACK_HOME;
   }
 

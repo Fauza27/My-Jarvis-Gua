@@ -1,10 +1,10 @@
 
 import { ChatRequest, ChatResponse, SemanticSearchResponse } from "../types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const BASE_URL = typeof window === "undefined" ? process.env.NEXT_PUBLIC_API_URL : "";
 const REQUEST_TIMEOUT = 30000;
 
-if (!BASE_URL) {
+if (typeof window === "undefined" && !BASE_URL) {
   throw new Error("NEXT_PUBLIC_API_URL environment variable is not defined");
 }
 
