@@ -23,16 +23,6 @@ const initialState: AuthState = {
   lastUpdate: undefined,
 };
 
-function setAuthCookie(expiresAt: number) {
-  const maxAge = expiresAt - Math.floor(Date.now() / 1000);
-  if (maxAge <= 0) return;
-  document.cookie = ["auth_session=1", `max-age=${maxAge}`, "path=/", "samesite=lax"].join("; ");
-}
-
-function clearAuthCookie() {
-  document.cookie = "auth_session=; max-age=0; path=/";
-}
-
 export const useAuthStore = create<AuthState & AuthActions>()(
   persist(
     (set, get) => ({
@@ -66,14 +56,10 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           hasHydrated: true,
           lastUpdate: timestamp,
         });
-
-        setAuthCookie(expiresAt);
       },
 
       clearAuth: () => {
         set({ ...initialState, hasHydrated: true });
-
-        clearAuthCookie();
       },
 
       markHydrated: () => set({ hasHydrated: true }),
@@ -99,8 +85,6 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       name: "auth-storage",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
         expiresAt: state.expiresAt,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
@@ -108,12 +92,9 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       }),
       onRehydrateStorage: () => (state) => {
         state?.markHydrated();
-
         if (state?.expiresAt && state.isAuthenticated) {
           const currentTime = Math.floor(Date.now() / 1000);
-          if (state.expiresAt > currentTime) {
-            setAuthCookie(state.expiresAt);
-          } else {
+          if (state.expiresAt <= currentTime) {
             state.clearAuth();
           }
         }

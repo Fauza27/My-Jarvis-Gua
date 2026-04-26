@@ -8,26 +8,7 @@ if (!BASE_URL) {
   throw new Error("NEXT_PUBLIC_API_URL environment variable is not defined");
 }
 
-// Helper to create fetch with timeout
-const fetchWithTimeout = async (url: string, options: RequestInit = {}) => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    return response;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("Request timeout - please try again");
-    }
-    throw error;
-  }
-};
+import { fetchWithTimeout } from "@/lib/fetch";
 
 // Helper to get valid token (with auto-refresh)
 export const getValidToken = async (): Promise<string> => {
@@ -113,16 +94,16 @@ export const forgotPassword = async (email: string): Promise<ForgotPasswordRespo
 
 export const logout = async (token?: string): Promise<void> => {
   const resolvedToken = token || (await getValidToken());
-  if (!resolvedToken) {
-    throw new Error("No valid access token available");
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (resolvedToken) {
+    headers.Authorization = `Bearer ${resolvedToken}`;
   }
 
   const res = await fetchWithTimeout(`${BASE_URL}/api/auth/logout`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${resolvedToken}`,
-    },
+    headers,
     credentials: "include",
   });
 
@@ -158,15 +139,14 @@ export const refreshToken = async (refreshToken: string): Promise<LoginResponse>
 
 export const verifyToken = async (token?: string) => {
   const resolvedToken = token || (await getValidToken());
-  if (!resolvedToken) {
-    throw new Error("No valid access token available");
+  const headers: Record<string, string> = {};
+  if (resolvedToken) {
+    headers.Authorization = `Bearer ${resolvedToken}`;
   }
 
   const res = await fetchWithTimeout(`${BASE_URL}/api/auth/verify`, {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${resolvedToken}`,
-    },
+    headers,
     credentials: "include",
   });
 
@@ -175,4 +155,20 @@ export const verifyToken = async (token?: string) => {
   }
 
   return res.json();
+};
+
+export const syncSessionCookies = async (payload: { access_token: string; refresh_token: string; expires_at: number }): Promise<void> => {
+  const res = await fetchWithTimeout(`${BASE_URL}/api/auth/session`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ detail: "Session sync failed" }));
+    throw new Error(error.detail || "Session sync failed");
+  }
 };

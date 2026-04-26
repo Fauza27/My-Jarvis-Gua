@@ -6,6 +6,7 @@ import { useAuthStore } from "@/features/auth/store";
 import { Loader2, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
+import { syncSessionCookies } from "@/features/auth/api/authApi";
 
 const AUTH_TIMEOUT_MS = 15000;
 
@@ -53,7 +54,7 @@ export default function AuthCallbackPage() {
 
     const handleCallback = async () => {
       try {
-        const persistSession = (session: NonNullable<Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]>) => {
+        const persistSession = async (session: NonNullable<Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]>) => {
           if (!session.expires_at) {
             failAuth("Authentication session is invalid. Please sign in again.");
             return false;
@@ -65,6 +66,16 @@ export default function AuthCallbackPage() {
             created_at: session.user.created_at,
             email_confirmed: session.user.email_confirmed_at != null,
           });
+
+          try {
+            await syncSessionCookies({
+              access_token: session.access_token,
+              refresh_token: session.refresh_token ?? "",
+              expires_at: session.expires_at,
+            });
+          } catch (err) {
+            console.error("Session cookie sync failed:", err);
+          }
 
           if (isMounted) {
             router.replace("/dashboard");
@@ -94,7 +105,7 @@ export default function AuthCallbackPage() {
         const code = searchParams.get("code");
 
         const existingSession = await readCurrentSession();
-        if (existingSession && persistSession(existingSession)) {
+        if (existingSession && await persistSession(existingSession)) {
           return;
         }
 
@@ -107,7 +118,7 @@ export default function AuthCallbackPage() {
 
         if (exchangeError || !data.session) {
           const recoveredSession = await readCurrentSession();
-          if (recoveredSession && persistSession(recoveredSession)) {
+          if (recoveredSession && await persistSession(recoveredSession)) {
             return;
           }
 
@@ -115,7 +126,7 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        persistSession(data.session);
+        await persistSession(data.session);
       } catch (err) {
         failAuth(err instanceof Error ? err.message : "Unexpected authentication error. Please try again.");
       }

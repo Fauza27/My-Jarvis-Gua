@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, LogIn, Mail, Lock } from "lucide-react";
 import { LoginInput, loginSchema } from "../validations/authSchema";
-import { login } from "../api/authApi";
+import { login, syncSessionCookies } from "../api/authApi";
 import { useAuthStore } from "../store";
 import { mapServerError } from "../utils";
 import Link from "next/link";
@@ -40,6 +40,14 @@ export function LoginForm() {
     try {
       const response = await login(data.email, data.password);
       setAuth(response.access_token, response.refresh_token, response.expires_at, response.user);
+
+      // Sync HttpOnly cookies for server-side route protection
+      void syncSessionCookies({
+        access_token: response.access_token,
+        refresh_token: response.refresh_token,
+        expires_at: response.expires_at,
+      }).catch((err) => console.error("Session cookie sync failed:", err));
+
       setFormState("success");
       await new Promise((resolve) => setTimeout(resolve, 800));
       router.push("/dashboard");
