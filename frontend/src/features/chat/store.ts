@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { ConversationMessage } from "./types";
 
+const MAX_HISTORY_SIZE = 20;
+
 interface ChatState {
   conversationHistory: ConversationMessage[];
   lastActionTaken: string[];
@@ -15,7 +17,8 @@ export const useChatStore = create<ChatState>()(
     (set) => ({
       conversationHistory: [],
       lastActionTaken: [],
-      setConversationHistory: (messages) => set({ conversationHistory: messages }),
+      setConversationHistory: (messages) =>
+        set({ conversationHistory: messages.slice(-MAX_HISTORY_SIZE) }),
       setLastActionTaken: (actions) => set({ lastActionTaken: actions }),
       clearConversation: () => set({ conversationHistory: [], lastActionTaken: [] }),
     }),
@@ -23,7 +26,7 @@ export const useChatStore = create<ChatState>()(
       name: "chat-storage",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        conversationHistory: state.conversationHistory,
+        conversationHistory: state.conversationHistory.slice(-MAX_HISTORY_SIZE),
         lastActionTaken: state.lastActionTaken,
       }),
     },

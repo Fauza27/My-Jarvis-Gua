@@ -1,4 +1,4 @@
-import { getValidToken } from "@/features/auth/api/authApi";
+
 import { ChatRequest, ChatResponse, SemanticSearchResponse } from "../types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -8,48 +8,7 @@ if (!BASE_URL) {
   throw new Error("NEXT_PUBLIC_API_URL environment variable is not defined");
 }
 
-const fetchWithTimeout = async (url: string, options: RequestInit = {}) => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    return response;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("Request timeout - please try again");
-    }
-    throw error;
-  }
-};
-
-const parseErrorMessage = async (res: Response, fallbackMessage: string): Promise<string> => {
-  const error = await res.json().catch(() => ({ detail: fallbackMessage }));
-  return error.detail || fallbackMessage;
-};
-
-const getAuthHeaders = async (withJsonContentType = true): Promise<HeadersInit> => {
-  const token = await getValidToken();
-
-  if (!token) {
-    throw new Error("No valid access token available");
-  }
-
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${token}`,
-  };
-
-  if (withJsonContentType) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  return headers;
-};
+import { fetchWithTimeout, parseErrorMessage, getAuthHeaders } from "@/lib/fetch";
 
 export const sendChatMessage = async (payload: ChatRequest): Promise<ChatResponse> => {
   const headers = await getAuthHeaders();

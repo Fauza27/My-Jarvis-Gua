@@ -1,60 +1,11 @@
 import { CreateExpenseInput, Expense, ExpenseListFilters, ExpensesListResponse, ExpenseSummaryResponse, UpdateExpenseInput } from "../types";
-import { getValidToken } from "@/features/auth/api/authApi";
+import { fetchWithTimeout, parseErrorMessage, getAuthHeaders } from "@/lib/fetch";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-const REQUEST_TIMEOUT = 20000;
 
 if (!BASE_URL) {
   throw new Error("NEXT_PUBLIC_API_URL environment variable is not defined");
 }
-
-// Helper to create fetch with timeout
-const fetchWithTimeout = async (url: string, options: RequestInit = {}) => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    return response;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("Request timeout - please try again");
-    }
-    throw error;
-  }
-};
-
-// Helper untuk membuat header request yang sudah menyertakan access token.
-// Kenapa dipisah? Biar semua endpoint expense konsisten dan tidak copy-paste token logic.
-const getAuthHeaders = async (withJsonContentType = true): Promise<HeadersInit> => {
-  const token = await getValidToken();
-
-  if (!token) {
-    throw new Error("No valid access token available");
-  }
-
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${token}`,
-  };
-
-  if (withJsonContentType) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  return headers;
-};
-
-// Helper untuk normalisasi error dari backend.
-// Backend FastAPI mengirimkan field "detail", jadi kita pakai itu dulu kalau ada.
-const parseErrorMessage = async (res: Response, fallbackMessage: string): Promise<string> => {
-  const error = await res.json().catch(() => ({ detail: fallbackMessage }));
-  return error.detail || fallbackMessage;
-};
 
 const normalizeText = (value?: string) => (value ?? "").trim().toLowerCase();
 
