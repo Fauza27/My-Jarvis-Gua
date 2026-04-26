@@ -28,22 +28,28 @@ def _escape_md(text: str) -> str:
     return "".join(f"\\{c}" if c in special_chars else c for c in str(text))
 
 
-def _make_ai_service() -> AIService:
-    """Build AI service for Telegram text flow using admin client + explicit user filtering."""
-    openai_client = get_openai_client()
+def _make_ai_service(user_id: str) -> AIService:
+    """
+    Creates an AIService instance for the bot.
+    NOTE: We use the admin_client (service_role) here because the bot 
+    does not have a user JWT context. RLS is bypassed, so ALL database 
+    queries must explicitly filter by the provided user_id.
+    """
+    assert user_id, "user_id is required to prevent cross-user data leakage"
     admin_client = get_admin_supabase_client()
-
-    ai_repo = AIRepository(client=admin_client)
-    embedding_service = EmbeddingService(openai_client=openai_client, ai_repo=ai_repo)
+    openai_client = get_openai_client()
+    
     expense_service = ExpenseService(
         expense_repo=ExpenseRepository(client=admin_client),
-        embedding_service=embedding_service,
+        embedding_service=EmbeddingService(openai_client=openai_client, ai_repo=AIRepository(client=admin_client)),
     )
-
+    profile_repo = ProfileRepository(client=admin_client)
+    ai_repo = AIRepository(client=admin_client)
+    
     return AIService(
         openai_client=openai_client,
         expense_service=expense_service,
-        embedding_service=embedding_service,
+        profile_repo=profile_repo,
         ai_repo=ai_repo,
     )
 
@@ -93,7 +99,7 @@ async def handle_text_chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     try:
         await context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
 
-        ai_service = _make_ai_service()
+        ai_service = _make_ai_service(user_id)
         history = _load_history(context)
         response = ai_service.chat(
             user_id=user_id,
