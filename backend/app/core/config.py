@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     # JWT
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # Auth cookies
+    ACCESS_TOKEN_COOKIE_NAME: str = "access_token"
+    REFRESH_TOKEN_COOKIE_NAME: str = "refresh_token"
+    AUTH_COOKIE_SAMESITE: str = "lax"
     
     # OpenAI
     OPENAI_API_KEY: str
@@ -57,6 +62,15 @@ class Settings(BaseSettings):
     TELEGRAM_WEBHOOK_SECRET: str = ""       # Secret token to validate webhook requests
     TELEGRAM_WEBHOOK_PATH: str = "/api/telegram/webhook"
     
+    @field_validator("TELEGRAM_WEBHOOK_SECRET", mode='after')
+    @classmethod
+    def validate_webhook_secret(cls, value: str, info: ValidationInfo) -> str:
+        env = info.data.get("ENVIRONMENT", "development")
+        if env == "production" and info.data.get("TELEGRAM_WEBHOOK_URL"):
+            if not value or len(value) < 16:
+                raise ValueError("TELEGRAM_WEBHOOK_SECRET is required and must be at least 16 chars in production")
+        return value
+    
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3001"]
     
@@ -66,9 +80,12 @@ class Settings(BaseSettings):
         # Get environment from values
         env = info.data.get("ENVIRONMENT", "development")
         
-        # Don't allow wildcard in production
-        if "*" in value and env == "production":
-            raise ValueError("Wildcard CORS (*) not allowed in production")
+        # Don't allow wildcard or localhost in production
+        if env == "production":
+            if "*" in value:
+                raise ValueError("Wildcard CORS (*) not allowed in production")
+            if any("localhost" in origin for origin in value):
+                raise ValueError("localhost not allowed in CORS origins in production")
         
         return value
 

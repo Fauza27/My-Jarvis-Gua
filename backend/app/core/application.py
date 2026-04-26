@@ -4,8 +4,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from supabase import Client
 from telegram import Update
+
+from app.core.rate_limit import limiter
 
 from app.core.config import get_settings
 from app.infrastructure.supabase_client import get_supabase_client
@@ -87,6 +92,8 @@ def create_app() -> FastAPI:
         redoc_url="/redoc" if not settings.is_production else None,
         lifespan=lifespan,
     )
+    
+    app.state.limiter = limiter
 
     _register_middleware(app, settings)
     _register_exception_handlers(app)
@@ -95,6 +102,7 @@ def create_app() -> FastAPI:
     return app
 
 def _register_middleware(app: FastAPI, settings):
+    app.add_middleware(SlowAPIMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.ALLOWED_ORIGINS,
@@ -105,6 +113,8 @@ def _register_middleware(app: FastAPI, settings):
 
 def _register_exception_handlers(app: FastAPI):
     from app.core.exceptions import UnauthorizedError
+    
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     
     @app.exception_handler(AuthenticationError)
     @app.exception_handler(InvalidTokenError)

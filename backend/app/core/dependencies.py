@@ -2,7 +2,7 @@ from typing import Annotated
 import jwt
 import logging
 
-from fastapi import Depends, Header
+from fastapi import Depends, Header, Cookie
 from supabase import Client, AuthApiError
 
 from app.core.config import get_settings, Settings
@@ -24,6 +24,13 @@ def _extract_bearer_token(authorization: str | None) -> str:
     if not token:
         raise AuthenticationError("Token is missing")
     return token
+
+def _extract_token(authorization: str | None, access_token_cookie: str | None) -> str:
+    if authorization:
+        return _extract_bearer_token(authorization)
+    if access_token_cookie:
+        return access_token_cookie
+    raise AuthenticationError("authorization not found in header or cookie")
 
 def _verify_jwt_locally(token: str, settings: Settings) -> UserOut:
     try:
@@ -49,18 +56,10 @@ def _verify_jwt_locally(token: str, settings: Settings) -> UserOut:
 
 async def get_current_user(
     authorization: Annotated[str, Header()] = None,
+    access_token_cookie: Annotated[str | None, Cookie(alias="access_token")] = None,
     admin_supabase: Client = Depends(get_admin_supabase_client),
 ) -> UserOut:
-    if not authorization:
-        raise AuthenticationError("authorization not found in header")
-    
-    if not authorization.startswith("Bearer "):
-        raise AuthenticationError("Invalid authorization header format")
-    
-    token = _extract_bearer_token(authorization)
-    
-    if not token:
-        raise AuthenticationError("Token is missing")
+    token = _extract_token(authorization, access_token_cookie)
     
     try:
         response = admin_supabase.auth.get_user(token)
@@ -86,8 +85,9 @@ async def get_current_user(
            
 async def get_access_token(
     authorization: Annotated[str, Header()] = None,
+    access_token_cookie: Annotated[str | None, Cookie(alias="access_token")] = None,
 ) -> str:
-    return _extract_bearer_token(authorization)
+    return _extract_token(authorization, access_token_cookie)
 
 # Type Aliases for better readability
 CurrentUser = Annotated[object, Depends(get_current_user)]
