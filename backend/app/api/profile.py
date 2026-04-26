@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
 from supabase import Client
  
 from app.core.dependencies import CurrentUser, AccessToken
@@ -86,17 +86,10 @@ async def link_telegram_account(
     current_user: CurrentUser,
     service: ProfileService = Depends(get_profile_service_for_user),
 ):
-    """
-    link Telegram account to the currently authenticated user's profile.
-
-    Body:
-    ```json
-    {
-        "telegram_chat_id": "123456789"
-    }
-    ```
-    """
-    return service.link_telegram(user_id=str(current_user.id), telegram_chat_id=body.telegram_chat_id)
+    raise HTTPException(
+        status_code=410,
+        detail="Linking Telegram via web is disabled. Use /connect in Telegram with a one-time code.",
+    )
 
 @router.delete(
     "/me/telegram/unlink",

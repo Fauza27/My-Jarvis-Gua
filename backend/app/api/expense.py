@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, BackgroundTasks
 from fastapi import Query   
 from fastapi.responses import Response
 
@@ -126,8 +126,8 @@ async def get_expense_summary_by_year(
 async def get_all_expenses(
     current_user: CurrentUser,
     expense_service: ExpenseService = Depends(get_expense_service),
-    limit: int = 100,
-    offset: int = 0,
+    limit: int = Query(100, ge=1, le=200),
+    offset: int = Query(0, ge=0),
     expense_type: str | None = Query(None, alias="type", pattern="^(income|expense)$"),
     category: str | None = Query(None),
     q: str | None = Query(None),
@@ -178,12 +178,14 @@ async def get_expense_by_id(
 async def create_expense(
     request: CreateExpenseRequest,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
     expense_service: ExpenseService = Depends(get_expense_service),
 ) -> ExpenseOut:
     """Create a new expense."""
     return expense_service.create_expense(
         user_id=current_user.id,
         request=request,
+        background_tasks=background_tasks,
     )
 
 
@@ -197,6 +199,7 @@ async def update_expense(
     expense_id: str,
     request: UpdateExpenseRequest,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
     expense_service: ExpenseService = Depends(get_expense_service),
 ) -> ExpenseOut:
     """Partially update an existing expense."""
@@ -204,6 +207,7 @@ async def update_expense(
         user_id=current_user.id,
         expense_id=expense_id,
         request=request,
+        background_tasks=background_tasks,
     )
 
 
