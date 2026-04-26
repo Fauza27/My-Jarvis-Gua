@@ -12,6 +12,15 @@ load_dotenv()
 fake = Faker("id_ID")  # Locale Indonesia
 
 
+@pytest.fixture(autouse=True)
+def _disable_telegram_webhook(monkeypatch):
+    """Disable Telegram webhook startup during tests to avoid external calls."""
+    monkeypatch.setenv("TELEGRAM_WEBHOOK_URL", "")
+    monkeypatch.setenv("TELEGRAM_WEBHOOK_SECRET", "")
+    from app.core.config import get_settings
+    get_settings.cache_clear()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # FIXTURE: Data Pengguna
 # ─────────────────────────────────────────────────────────────────────────────
@@ -146,4 +155,28 @@ def mock_auth_repo():
     Mock AuthRepository untuk dipakai di unit test service.
     Semua method tersedia sebagai MagicMock yang bisa di-configure.
     """
+    return MagicMock()
+
+
+@pytest.fixture
+def mock_expense_repo():
+    """Mock ExpenseRepository untuk unit test ExpenseService."""
+    return MagicMock()
+
+
+@pytest.fixture
+def mock_embedding_service():
+    """Mock EmbeddingService untuk memastikan task dipanggil."""
+    return MagicMock()
+
+
+@pytest.fixture
+def mock_profile_repo():
+    """Mock ProfileRepository untuk unit test ProfileService."""
+    return MagicMock()
+
+
+@pytest.fixture
+def mock_ai_service():
+    """Mock AIService untuk endpoint test."""
     return MagicMock()

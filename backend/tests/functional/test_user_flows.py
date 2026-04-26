@@ -77,7 +77,7 @@ class TestUserOnboardingFlow:
             
             resp_register = client.post("/api/auth/register", json={
                 "email": "budi@test.com",
-                "password": "Password123",
+                "password": "Password123!",
             })
             
             assert resp_register.status_code == 201, "Langkah 1: Registrasi harus 201"
@@ -89,7 +89,7 @@ class TestUserOnboardingFlow:
             
             resp_login = client.post("/api/auth/login", json={
                 "email": "budi@test.com",
-                "password": "Password123",
+                "password": "Password123!",
             })
             
             assert resp_login.status_code == 200, "Langkah 2: Login harus 200"

@@ -136,6 +136,7 @@ class TestAuthorizationSecurity:
         app = create_app()
         from app.api.auth import get_auth_service
         from app.core.exceptions import UnauthorizedError
+        from app.core.rate_limit import limiter
 
         mock_auth_svc = MagicMock()
         # Simulate: kredensial salah
@@ -144,6 +145,12 @@ class TestAuthorizationSecurity:
         app.dependency_overrides[get_auth_service] = lambda: mock_auth_svc
 
         try:
+            # Reset limiter state to avoid 429 from previous auth tests.
+            if hasattr(limiter, "reset"):
+                limiter.reset()
+            elif hasattr(limiter, "_storage") and hasattr(limiter._storage, "clear"):
+                limiter._storage.clear()
+
             with TestClient(app) as client:
                 resp = client.post(
                     "/api/auth/login",

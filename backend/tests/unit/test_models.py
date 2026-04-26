@@ -11,10 +11,10 @@ class TestRegisterRequest:
     # ── Valid cases ───────────────────────────────────────────────────────────
 
     @pytest.mark.parametrize("valid_password", [
-        "Password123",      # Minimal valid
+        "Password123!",     # Minimal valid
         "MyStrongP4ss!",    # Dengan karakter spesial
-        "UPPER1lower",      # Variasi huruf besar/kecil
-        "a" * 7 + "A1",    # Tepat 9 karakter
+        "UPPER1lower!",     # Variasi huruf besar/kecil
+        "a" * 7 + "A1!",   # Tepat 9 karakter
     ])
     def test_password_valid_diterima(self, valid_password):
         """Password yang memenuhi semua kriteria harus diterima."""
@@ -23,7 +23,7 @@ class TestRegisterRequest:
 
     def test_email_valid_diterima(self):
         """Email dengan format yang benar harus diterima."""
-        request = RegisterRequest(email="budi@taskly.com", password="Password123")
+        request = RegisterRequest(email="budi@taskly.com", password="Password123!")
         assert request.email == "budi@taskly.com"
 
     # ── Invalid cases ─────────────────────────────────────────────────────────

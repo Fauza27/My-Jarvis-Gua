@@ -24,8 +24,15 @@ def supabase_test_client():
     
     Menggunakan Supabase project terpisah untuk test yang sudah dikonfigurasi di .env
     """
+    run_integration = os.getenv("RUN_INTEGRATION_TESTS")
     test_url = os.getenv("SUPABASE_TEST_URL")
     test_key = os.getenv("SUPABASE_TEST_ANON_KEY")
+
+    if not run_integration:
+        pytest.skip(
+            "RUN_INTEGRATION_TESTS tidak di-set. "
+            "Set RUN_INTEGRATION_TESTS=1 untuk menjalankan integration tests Supabase."
+        )
 
     if test_url and test_key:
         # Koneksi ke Supabase test environment yang nyata

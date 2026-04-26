@@ -11,6 +11,7 @@ from app.infrastructure.openai_client import get_openai_client
 from app.infrastructure.supabase_client import get_admin_supabase_client
 from app.models.ai import ConversationMessage
 from app.repositories.ai_repository import AIRepository
+from app.repositories.profile_repository import ProfileRepository
 from app.repositories.expense_repository import ExpenseRepository
 from app.services.ai_services import AIService
 from app.services.embedding_services import EmbeddingService
