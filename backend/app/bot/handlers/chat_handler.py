@@ -11,7 +11,6 @@ from app.infrastructure.openai_client import get_openai_client
 from app.infrastructure.supabase_client import get_admin_supabase_client
 from app.models.ai import ConversationMessage
 from app.repositories.ai_repository import AIRepository
-from app.repositories.profile_repository import ProfileRepository
 from app.repositories.expense_repository import ExpenseRepository
 from app.services.ai_services import AIService
 from app.services.embedding_services import EmbeddingService
@@ -40,17 +39,18 @@ def _make_ai_service(user_id: str) -> AIService:
     admin_client = get_admin_supabase_client()
     openai_client = get_openai_client()
     
+    ai_repo = AIRepository(client=admin_client)
+    embedding_service = EmbeddingService(openai_client=openai_client, ai_repo=ai_repo)
+    
     expense_service = ExpenseService(
         expense_repo=ExpenseRepository(client=admin_client),
-        embedding_service=EmbeddingService(openai_client=openai_client, ai_repo=AIRepository(client=admin_client)),
+        embedding_service=embedding_service,
     )
-    profile_repo = ProfileRepository(client=admin_client)
-    ai_repo = AIRepository(client=admin_client)
     
     return AIService(
         openai_client=openai_client,
         expense_service=expense_service,
-        profile_repo=profile_repo,
+        embedding_service=embedding_service,
         ai_repo=ai_repo,
     )
 
