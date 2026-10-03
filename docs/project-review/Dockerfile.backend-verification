@@ -1,0 +1,11 @@
+# Test-only image; the deployable runtime image remains unchanged.
+FROM life-os-backend:verification
+COPY backend/requirements.txt backend/requirements-dev.txt backend/constraints.txt /tmp/test-dependencies/
+RUN pip install --no-cache-dir -r /tmp/test-dependencies/requirements-dev.txt
+WORKDIR /workspace/backend
+COPY backend/app /workspace/backend/app
+COPY backend/tests /workspace/backend/tests
+COPY backend/pytest.ini /workspace/backend/pytest.ini
+COPY docs/project-review/run_remediation_checks.py /workspace/docs/project-review/run_remediation_checks.py
+ENV REMEDIATION_OUTPUT_DIR=/results
+CMD ["python", "/workspace/docs/project-review/run_remediation_checks.py"]

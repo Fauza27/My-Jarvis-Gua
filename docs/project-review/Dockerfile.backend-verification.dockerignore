@@ -1,0 +1,16 @@
+**
+!backend/
+!backend/app/
+!backend/app/**
+!backend/tests/
+!backend/tests/**
+!backend/requirements.txt
+!backend/requirements-dev.txt
+!backend/constraints.txt
+!backend/pytest.ini
+!docs/
+!docs/project-review/
+!docs/project-review/run_remediation_checks.py
+**/__pycache__/
+**/*.pyc
+**/.env*
