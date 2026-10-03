@@ -10,7 +10,12 @@ interface ChatMessageListProps {
   className?: string;
 }
 
-export function ChatMessageList({ messages, isPending, latestActions, className = "" }: ChatMessageListProps) {
+export function ChatMessageList({
+  messages,
+  isPending,
+  latestActions,
+  className = "",
+}: ChatMessageListProps) {
   return (
     <div className={`space-y-6 ${className}`}>
       {messages.map((message, index) => {
@@ -22,13 +27,17 @@ export function ChatMessageList({ messages, isPending, latestActions, className 
               /* User message — Claude style: right-aligned block with subtle bg */
               <div className="flex justify-end">
                 <div className="max-w-[80%] rounded-3xl rounded-br-lg bg-muted/80 px-5 py-3 text-sm leading-relaxed text-foreground">
-                  <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                  <p className="whitespace-pre-wrap break-words">
+                    {message.content}
+                  </p>
                 </div>
               </div>
             ) : (
               /* AI message — Claude style: plain text, no bubble, no border */
               <div className="text-sm leading-relaxed text-foreground">
-                <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                <p className="whitespace-pre-wrap break-words">
+                  {message.content}
+                </p>
               </div>
             )}
           </div>
@@ -53,7 +62,10 @@ export function ChatMessageList({ messages, isPending, latestActions, className 
           </div>
           <div className="flex flex-wrap gap-1.5">
             {latestActions.map((action, index) => (
-              <span key={`${action}-${index}`} className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+              <span
+                key={`${action}-${index}`}
+                className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+              >
                 {action}
               </span>
             ))}

@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { generateTelegramConnectCode, getMyProfile, unlinkTelegramAccount, updateMyProfile } from "../api/profileApi";
+import {
+  generateTelegramConnectCode,
+  getMyProfile,
+  unlinkTelegramAccount,
+  updateMyProfile,
+} from "../api/profileApi";
 import { UpdateProfileInput } from "../types";
+import { useAuthStore } from "@/features/auth/store";
 
 export const profileQueryKeys = {
   all: ["profile"] as const,
@@ -8,10 +14,11 @@ export const profileQueryKeys = {
 };
 
 export function useMyProfile(enabled = true) {
+  const userId = useAuthStore((state) => state.user?.id);
   return useQuery({
-    queryKey: profileQueryKeys.me(),
+    queryKey: [...profileQueryKeys.me(), userId],
     queryFn: getMyProfile,
-    enabled,
+    enabled: enabled && Boolean(userId),
   });
 }
 

@@ -1,18 +1,56 @@
 "use client";
+import { Modal } from "@/components/Modal";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/features/auth/store";
-import { logout } from "@/features/auth/api/authApi";
-import { useGenerateTelegramConnectCode, useMyProfile, useUnlinkTelegramAccount } from "@/features/profile/hooks";
-import { User, Mail, Phone, MapPin, Bot, Copy, Check, Bell, Shield, Palette, Globe, HelpCircle, FileText, LogOut, ChevronRight, Camera, CircleUserRound } from "lucide-react";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import {
+  useGenerateTelegramConnectCode,
+  useMyProfile,
+  useUnlinkTelegramAccount,
+} from "@/features/profile/hooks";
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Bot,
+  Copy,
+  Check,
+  Bell,
+  Shield,
+  Palette,
+  Globe,
+  HelpCircle,
+  FileText,
+  LogOut,
+  ChevronRight,
+  Camera,
+  CircleUserRound,
+} from "lucide-react";
 import Image from "next/image";
 
 // ── Menu Item Component ──
-function ProfileMenuItem({ icon: Icon, label, value, onClick, variant = "default", chevron = true }: { icon: React.ElementType; label: string; value?: string; onClick?: () => void; variant?: "default" | "danger"; chevron?: boolean }) {
+function ProfileMenuItem({
+  icon: Icon,
+  label,
+  value,
+  onClick,
+  variant = "default",
+  chevron = true,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value?: string;
+  onClick?: () => void;
+  variant?: "default" | "danger";
+  chevron?: boolean;
+}) {
   return (
     <button
       type="button"
+      disabled={!onClick}
       onClick={onClick}
       className={`
         w-full flex items-center gap-3 px-4 py-3.5
@@ -26,30 +64,51 @@ function ProfileMenuItem({ icon: Icon, label, value, onClick, variant = "default
           ${variant === "danger" ? "bg-destructive/10" : "bg-primary/10"}
         `}
       >
-        <Icon className={`w-4.5 h-4.5 ${variant === "danger" ? "text-destructive" : "text-primary"}`} />
+        <Icon
+          className={`w-4.5 h-4.5 ${variant === "danger" ? "text-destructive" : "text-primary"}`}
+        />
       </div>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium ${variant === "danger" ? "text-destructive" : "text-foreground"}`}>{label}</p>
-        {value && <p className="text-xs text-muted-foreground truncate">{value}</p>}
+        <p
+          className={`text-sm font-medium ${variant === "danger" ? "text-destructive" : "text-foreground"}`}
+        >
+          {label}
+        </p>
+        {value && (
+          <p className="text-xs text-muted-foreground truncate">{value}</p>
+        )}
       </div>
-      {chevron && <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
+      {chevron && onClick && (
+        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+      )}
     </button>
   );
 }
 
 // ── Section Component ──
-function ProfileSection({ title, children }: { title: string; children: React.ReactNode }) {
+function ProfileSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
-      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-1">{title}</h3>
-      <div className="bg-card rounded-2xl border border-border overflow-hidden divide-y divide-border/50">{children}</div>
+      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-1">
+        {title}
+      </h3>
+      <div className="bg-card rounded-2xl border border-border overflow-hidden divide-y divide-border/50">
+        {children}
+      </div>
     </div>
   );
 }
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { clearAuth, user } = useAuthStore();
+  const { user } = useAuthStore();
+  const { logout: handleLogout } = useAuth();
   const profileQuery = useMyProfile();
   const generateCodeMutation = useGenerateTelegramConnectCode();
   const unlinkTelegramMutation = useUnlinkTelegramAccount();
@@ -61,9 +120,15 @@ export default function ProfilePage() {
   const [showTelegramModal, setShowTelegramModal] = useState(false);
 
   const profile = profileQuery.data;
-  const displayName = profile?.display_name || user?.email?.split("@")[0] || "User";
+  const displayName =
+    profile?.display_name || user?.email?.split("@")[0] || "User";
   const joinedDateSource = profile?.created_at || user?.created_at;
-  const joinedDate = joinedDateSource ? new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric" }).format(new Date(joinedDateSource)) : "-";
+  const joinedDate = joinedDateSource
+    ? new Intl.DateTimeFormat("id-ID", {
+        month: "long",
+        year: "numeric",
+      }).format(new Date(joinedDateSource))
+    : "-";
 
   const generateCode = async () => {
     setCodeError(null);
@@ -72,7 +137,10 @@ export default function ProfilePage() {
       const data = await generateCodeMutation.mutateAsync();
       setConnectCode(data.code);
     } catch (err: unknown) {
-      setCodeError((err instanceof Error ? err.message : "Terjadi kesalahan") || "Terjadi kesalahan");
+      setCodeError(
+        (err instanceof Error ? err.message : "Terjadi kesalahan") ||
+          "Terjadi kesalahan",
+      );
     }
   };
 
@@ -82,7 +150,10 @@ export default function ProfilePage() {
       await unlinkTelegramMutation.mutateAsync();
       setConnectCode(null);
     } catch (err: unknown) {
-      setCodeError((err instanceof Error ? err.message : "Gagal memutuskan Telegram") || "Gagal memutuskan Telegram");
+      setCodeError(
+        (err instanceof Error ? err.message : "Gagal memutuskan Telegram") ||
+          "Gagal memutuskan Telegram",
+      );
     }
   };
 
@@ -93,82 +164,143 @@ export default function ProfilePage() {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      clearAuth();
-      router.push("/login");
-    }
-  };
-
   return (
     <>
       <div className="p-4 space-y-5">
-        {profileQuery.isError && <div className="bg-destructive/10 text-destructive p-3 rounded-xl border border-destructive/20 text-sm">{profileQuery.error instanceof Error ? profileQuery.error.message : "Gagal memuat data profil"}</div>}
+        {profileQuery.isError && (
+          <div className="bg-destructive/10 text-destructive p-3 rounded-xl border border-destructive/20 text-sm">
+            {profileQuery.error instanceof Error
+              ? profileQuery.error.message
+              : "Gagal memuat data profil"}
+          </div>
+        )}
 
         {/* ── Avatar & Name ── */}
         <div className="flex flex-col items-center text-center pt-2">
           <div className="relative mb-3">
             {profile?.avatar_url ? (
-              <Image src={profile.avatar_url} alt="Profile" width={80} height={80} className="w-20 h-20 rounded-2xl object-cover" />
+              <Image
+                unoptimized
+                src={profile.avatar_url}
+                alt="Profile"
+                width={80}
+                height={80}
+                className="w-20 h-20 rounded-2xl object-cover"
+              />
             ) : (
               <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center">
                 <CircleUserRound className="w-10 h-10 text-primary" />
               </div>
             )}
-            <button className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors" title="Ubah foto profil">
+            <button
+              disabled
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors"
+              title="Ubah foto profil belum tersedia"
+            >
               <Camera className="w-3.5 h-3.5" />
             </button>
           </div>
           <h2 className="text-lg font-bold text-foreground">{displayName}</h2>
           <p className="text-sm text-muted-foreground">{user?.email || "-"}</p>
-          <p className="text-xs text-muted-foreground mt-1">Bergabung sejak {joinedDate}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Bergabung sejak {joinedDate}
+          </p>
         </div>
 
         {/* ── Informasi Akun ── */}
         <ProfileSection title="Informasi Akun">
-          <ProfileMenuItem icon={User} label="Nama Lengkap" value={displayName} onClick={() => {}} />
-          <ProfileMenuItem icon={Mail} label="Email" value={user?.email || "-"} onClick={() => {}} />
-          <ProfileMenuItem icon={Phone} label="Nomor Telepon" value="Belum tersedia" onClick={() => {}} />
-          <ProfileMenuItem icon={MapPin} label="Lokasi" value="Belum tersedia" onClick={() => {}} />
+          <ProfileMenuItem
+            icon={User}
+            label="Nama Lengkap"
+            value={displayName}
+          />
+          <ProfileMenuItem
+            icon={Mail}
+            label="Email"
+            value={user?.email || "-"}
+          />
+          <ProfileMenuItem
+            icon={Phone}
+            label="Nomor Telepon"
+            value="Belum tersedia"
+          />
+          <ProfileMenuItem
+            icon={MapPin}
+            label="Lokasi"
+            value="Belum tersedia"
+          />
         </ProfileSection>
 
         {/* ── Integrasi ── */}
         <ProfileSection title="Integrasi">
-          <ProfileMenuItem icon={Bot} label="Telegram Bot" value={profile?.telegram_linked ? "Terhubung" : "Belum terhubung"} onClick={() => setShowTelegramModal(true)} />
+          <ProfileMenuItem
+            icon={Bot}
+            label="Telegram Bot"
+            value={profile?.telegram_linked ? "Terhubung" : "Belum terhubung"}
+            onClick={() => setShowTelegramModal(true)}
+          />
         </ProfileSection>
 
         {/* ── Preferensi ── */}
         <ProfileSection title="Preferensi">
-          <ProfileMenuItem icon={Bell} label="Notifikasi" value="Aktif" onClick={() => {}} />
-          <ProfileMenuItem icon={Palette} label="Tema" value="Light Mode" onClick={() => {}} />
-          <ProfileMenuItem icon={Globe} label="Bahasa" value="Indonesia" onClick={() => {}} />
+          <ProfileMenuItem
+            icon={Bell}
+            label="Notifikasi"
+            value="Belum tersedia"
+          />
+          <ProfileMenuItem
+            icon={Palette}
+            label="Tema"
+            value="Buka pengaturan tampilan"
+            onClick={() => router.push("/dashboard/settings")}
+          />
+          <ProfileMenuItem icon={Globe} label="Bahasa" value="Indonesia" />
         </ProfileSection>
 
         {/* ── Lainnya ── */}
         <ProfileSection title="Lainnya">
-          <ProfileMenuItem icon={Shield} label="Privasi & Keamanan" onClick={() => {}} />
-          <ProfileMenuItem icon={HelpCircle} label="Bantuan & FAQ" onClick={() => {}} />
-          <ProfileMenuItem icon={FileText} label="Syarat & Ketentuan" onClick={() => {}} />
+          <ProfileMenuItem
+            icon={Shield}
+            label="Privasi & Keamanan"
+            value="Dokumen belum tersedia"
+          />
+          <ProfileMenuItem
+            icon={HelpCircle}
+            label="Bantuan & FAQ"
+            onClick={() => router.push("/support")}
+          />
+          <ProfileMenuItem
+            icon={FileText}
+            label="Syarat & Ketentuan"
+            value="Dokumen belum tersedia"
+          />
         </ProfileSection>
 
         {/* ── Logout ── */}
         <div>
           <div className="bg-card rounded-2xl border border-border overflow-hidden">
-            <ProfileMenuItem icon={LogOut} label="Logout" onClick={handleLogout} variant="danger" chevron={false} />
+            <ProfileMenuItem
+              icon={LogOut}
+              label="Logout"
+              onClick={handleLogout}
+              variant="danger"
+              chevron={false}
+            />
           </div>
         </div>
 
         {/* ── Version ── */}
-        <p className="text-center text-xs text-muted-foreground pb-4">My Jarvis Gua · v0.1.0</p>
+        <p className="text-center text-xs text-muted-foreground pb-4">
+          My Jarvis Gua · v0.1.0
+        </p>
       </div>
 
       {/* ── Telegram Connect Modal ── */}
       {showTelegramModal && (
-        <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center" onClick={() => setShowTelegramModal(false)}>
+        <Modal
+          title="Hubungkan Telegram"
+          onClose={() => setShowTelegramModal(false)}
+        >
           {/* Backdrop */}
           <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" />
 
@@ -190,30 +322,55 @@ export default function ProfilePage() {
                 <Bot className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-card-foreground">Telegram Bot</h2>
-                <p className="text-sm text-muted-foreground mt-0.5">Integrasikan akun dengan bot Telegram untuk mencatat keuangan langsung dari chat.</p>
+                <h2 className="text-base font-semibold text-card-foreground">
+                  Telegram Bot
+                </h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Integrasikan akun dengan bot Telegram untuk mencatat keuangan
+                  langsung dari chat.
+                </p>
               </div>
             </div>
 
             {/* Error */}
-            {codeError && <div className="bg-destructive/10 text-destructive p-3 rounded-xl mb-4 text-sm border border-destructive/20">{codeError}</div>}
+            {codeError && (
+              <div className="bg-destructive/10 text-destructive p-3 rounded-xl mb-4 text-sm border border-destructive/20">
+                {codeError}
+              </div>
+            )}
 
             {/* Connect Code */}
             {connectCode && (
               <div className="bg-muted rounded-xl p-4 mb-4 border border-border">
-                <p className="text-sm text-muted-foreground mb-2">Kode Connect kamu:</p>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Kode Connect kamu:
+                </p>
                 <div className="flex items-center gap-3">
-                  <code className="bg-primary/10 text-primary px-4 py-2 rounded-lg text-lg font-mono font-bold tracking-wider">{connectCode}</code>
-                  <button onClick={handleCopy} className="p-2 rounded-lg hover:bg-muted-foreground/10 transition-colors text-muted-foreground hover:text-foreground" title="Copy command">
-                    {isCopied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                  <code className="bg-primary/10 text-primary px-4 py-2 rounded-lg text-lg font-mono font-bold tracking-wider">
+                    {connectCode}
+                  </code>
+                  <button
+                    onClick={handleCopy}
+                    className="p-2 rounded-lg hover:bg-muted-foreground/10 transition-colors text-muted-foreground hover:text-foreground"
+                    title="Copy command"
+                  >
+                    {isCopied ? (
+                      <Check className="w-4 h-4 text-success" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
                 <p className="text-sm text-muted-foreground mt-3">
                   Buka bot telegram lalu ketik:
                   <br />
-                  <span className="font-mono bg-muted-foreground/10 px-1.5 py-0.5 rounded text-foreground mt-1 inline-block">/connect {connectCode}</span>
+                  <span className="font-mono bg-muted-foreground/10 px-1.5 py-0.5 rounded text-foreground mt-1 inline-block">
+                    /connect {connectCode}
+                  </span>
                 </p>
-                <p className="text-xs text-destructive mt-2">Kode berlaku 10 menit.</p>
+                <p className="text-xs text-destructive mt-2">
+                  Kode berlaku 10 menit.
+                </p>
               </div>
             )}
 
@@ -232,7 +389,11 @@ export default function ProfilePage() {
                   disabled:opacity-50 disabled:cursor-not-allowed
                 "
               >
-                {generateCodeMutation.isPending ? "Generating..." : connectCode ? "Generate Ulang" : "Generate Kode"}
+                {generateCodeMutation.isPending
+                  ? "Generating..."
+                  : connectCode
+                    ? "Generate Ulang"
+                    : "Generate Kode"}
               </button>
               {profile?.telegram_linked && (
                 <button
@@ -240,15 +401,20 @@ export default function ProfilePage() {
                   disabled={unlinkTelegramMutation.isPending}
                   className="px-4 py-2.5 rounded-xl border border-destructive/30 text-sm text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
                 >
-                  {unlinkTelegramMutation.isPending ? "Memutuskan..." : "Putuskan"}
+                  {unlinkTelegramMutation.isPending
+                    ? "Memutuskan..."
+                    : "Putuskan"}
                 </button>
               )}
-              <button onClick={() => setShowTelegramModal(false)} className="px-4 py-2.5 rounded-xl border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+              <button
+                onClick={() => setShowTelegramModal(false)}
+                className="px-4 py-2.5 rounded-xl border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
                 Tutup
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </>
   );

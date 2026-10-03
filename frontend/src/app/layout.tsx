@@ -24,9 +24,9 @@ export const metadata: Metadata = {
   title: "My Jarvis Gua",
   description: "Your personal AI assistant for life management",
   icons: {
-    icon: "/Logo-Finance-Tracker-2.png",
-    shortcut: "/Logo-Finance-Tracker-2.png",
-    apple: "/Logo-Finance-Tracker-2.png",
+    icon: "/optimized/Logo-Finance-Tracker-2.webp",
+    shortcut: "/optimized/Logo-Finance-Tracker-2.webp",
+    apple: "/optimized/Logo-Finance-Tracker-2.webp",
   },
 };
 
@@ -37,7 +37,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} ${urbanist.variable} font-sans antialiased`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${urbanist.variable} font-sans antialiased`}
+      >
         <ThemeSync />
         <QueryProvider>{children}</QueryProvider>
       </body>

@@ -9,7 +9,13 @@ export default function Home() {
       <nav className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 font-bold text-xl tracking-tight">
-            <Image src="/logo-maskot.png" alt="My Jarvis Gua Logo" width={32} height={32} className="rounded-lg" />
+            <Image
+              src="/optimized/logo-maskot.webp"
+              alt="My Jarvis Gua Logo"
+              width={32}
+              height={32}
+              className="rounded-lg"
+            />
             <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               My Jarvis Gua
             </span>
@@ -30,21 +36,23 @@ export default function Home() {
         <section className="flex flex-col items-center text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
           <div className="relative">
             <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-primary to-secondary opacity-50 blur-xl"></div>
-            <Image 
-              src="/logo-maskot.png" 
-              alt="My Jarvis Gua Maskot" 
-              width={120} 
-              height={120} 
+            <Image
+              src="/optimized/logo-maskot.webp"
+              alt="My Jarvis Gua Maskot"
+              width={120}
+              height={120}
               className="relative rounded-2xl shadow-2xl ring-1 ring-border"
               priority
             />
           </div>
           <div className="space-y-4 max-w-3xl">
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-              Your Intelligent <span className="text-primary">Second Brain</span>
+              Your Intelligent{" "}
+              <span className="text-primary">Second Brain</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-              Manage your finances, health, vehicles, and daily tasks in one unified workspace. Powered by AI, designed for you.
+              Manage your finances, health, vehicles, and daily tasks in one
+              unified workspace. Powered by AI, designed for you.
             </p>
           </div>
           <div className="flex items-center gap-4 pt-4">
@@ -75,15 +83,24 @@ export default function Home() {
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="flex justify-between items-start mb-4">
                   <div className="p-3 bg-primary/10 rounded-xl">
-                    <Image src="/Logo-Finance-Tracker.png" alt="Finance Tracker" width={40} height={40} className="rounded-lg object-contain" />
+                    <Image
+                      src="/optimized/Logo-Finance-Tracker.webp"
+                      alt="Finance Tracker"
+                      width={40}
+                      height={40}
+                      className="rounded-lg object-contain"
+                    />
                   </div>
                   <span className="inline-flex items-center rounded-full border border-success/30 bg-success/10 px-2.5 py-0.5 text-xs font-semibold text-success">
                     Active
                   </span>
                 </div>
-                <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">Finance Tracker</h3>
+                <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
+                  Finance Tracker
+                </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Track spending, scan receipts instantly, and get actionable budget insights.
+                  Track spending, record transactions, and get actionable budget
+                  insights.
                 </p>
               </div>
             </Link>
@@ -92,15 +109,24 @@ export default function Home() {
             <div className="h-full relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 p-6 opacity-80 transition-all hover:opacity-100 hover:border-border">
               <div className="flex justify-between items-start mb-4">
                 <div className="p-3 bg-muted rounded-xl">
-                  <Image src="/Logo-Vechile-Monitoring.png" alt="Vehicle Monitoring" width={40} height={40} className="rounded-lg object-contain grayscale opacity-70 transition-all group-hover:grayscale-0 group-hover:opacity-100" />
+                  <Image
+                    src="/optimized/Logo-Vechile-Monitoring.webp"
+                    alt="Vehicle Monitoring"
+                    width={40}
+                    height={40}
+                    className="rounded-lg object-contain grayscale opacity-70 transition-all group-hover:grayscale-0 group-hover:opacity-100"
+                  />
                 </div>
                 <span className="inline-flex items-center rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
                   Upcoming
                 </span>
               </div>
-              <h3 className="text-xl font-bold mb-2 text-foreground/80">Vehicle Monitoring</h3>
+              <h3 className="text-xl font-bold mb-2 text-foreground/80">
+                Vehicle Monitoring
+              </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Stay on top of maintenance. Track mileage, predict repairs, and avoid unexpected mechanic bills.
+                Stay on top of maintenance. Track mileage, predict repairs, and
+                avoid unexpected mechanic bills.
               </p>
             </div>
 
@@ -108,13 +134,21 @@ export default function Home() {
             <div className="h-full relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 p-6 opacity-80 transition-all hover:opacity-100 hover:border-border">
               <div className="flex justify-between items-start mb-4">
                 <div className="p-3 bg-muted rounded-xl">
-                  <Image src="/Logo-Diet.png" alt="Diet Monitor" width={40} height={40} className="rounded-lg object-contain grayscale opacity-70 transition-all group-hover:grayscale-0 group-hover:opacity-100" />
+                  <Image
+                    src="/optimized/Logo-Diet.webp"
+                    alt="Diet Monitor"
+                    width={40}
+                    height={40}
+                    className="rounded-lg object-contain grayscale opacity-70 transition-all group-hover:grayscale-0 group-hover:opacity-100"
+                  />
                 </div>
                 <span className="inline-flex items-center rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
                   Upcoming
                 </span>
               </div>
-              <h3 className="text-xl font-bold mb-2 text-foreground/80">Diet & Calorie Monitor</h3>
+              <h3 className="text-xl font-bold mb-2 text-foreground/80">
+                Diet & Calorie Monitor
+              </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Snap a photo to log meals. Track calories and macros seamlessly.
               </p>
@@ -124,15 +158,24 @@ export default function Home() {
             <div className="h-full relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 p-6 opacity-80 transition-all hover:opacity-100 hover:border-border">
               <div className="flex justify-between items-start mb-4">
                 <div className="p-3 bg-muted rounded-xl">
-                  <Image src="/Logo-Health-center.png" alt="Health Center" width={40} height={40} className="rounded-lg object-contain grayscale opacity-70 transition-all group-hover:grayscale-0 group-hover:opacity-100" />
+                  <Image
+                    src="/optimized/Logo-Health-center.webp"
+                    alt="Health Center"
+                    width={40}
+                    height={40}
+                    className="rounded-lg object-contain grayscale opacity-70 transition-all group-hover:grayscale-0 group-hover:opacity-100"
+                  />
                 </div>
                 <span className="inline-flex items-center rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
                   Upcoming
                 </span>
               </div>
-              <h3 className="text-xl font-bold mb-2 text-foreground/80">Health Center</h3>
+              <h3 className="text-xl font-bold mb-2 text-foreground/80">
+                Health Center
+              </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Sync your nutrition and activity data to get personalized health guidance.
+                Sync your nutrition and activity data to get personalized health
+                guidance.
               </p>
             </div>
 
@@ -140,15 +183,24 @@ export default function Home() {
             <div className="h-full relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 p-6 opacity-80 transition-all hover:opacity-100 hover:border-border">
               <div className="flex justify-between items-start mb-4">
                 <div className="p-3 bg-muted rounded-xl">
-                  <Image src="/Logo-Running-Coach.png" alt="Running Coach" width={40} height={40} className="rounded-lg object-contain grayscale opacity-70 transition-all group-hover:grayscale-0 group-hover:opacity-100" />
+                  <Image
+                    src="/optimized/Logo-Running-Coach.webp"
+                    alt="Running Coach"
+                    width={40}
+                    height={40}
+                    className="rounded-lg object-contain grayscale opacity-70 transition-all group-hover:grayscale-0 group-hover:opacity-100"
+                  />
                 </div>
                 <span className="inline-flex items-center rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
                   Upcoming
                 </span>
               </div>
-              <h3 className="text-xl font-bold mb-2 text-foreground/80">Running Coach</h3>
+              <h3 className="text-xl font-bold mb-2 text-foreground/80">
+                Running Coach
+              </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Adaptive training plans designed to help you crush your next marathon goal.
+                Adaptive training plans designed to help you crush your next
+                marathon goal.
               </p>
             </div>
 
@@ -156,15 +208,24 @@ export default function Home() {
             <div className="h-full relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 p-6 opacity-80 transition-all hover:opacity-100 hover:border-border">
               <div className="flex justify-between items-start mb-4">
                 <div className="p-3 bg-muted rounded-xl">
-                  <Image src="/Logo-Study-Task-Scheduler.png" alt="Study Scheduler" width={40} height={40} className="rounded-lg object-contain grayscale opacity-70 transition-all group-hover:grayscale-0 group-hover:opacity-100" />
+                  <Image
+                    src="/optimized/Logo-Study-Task-Scheduler.webp"
+                    alt="Study Scheduler"
+                    width={40}
+                    height={40}
+                    className="rounded-lg object-contain grayscale opacity-70 transition-all group-hover:grayscale-0 group-hover:opacity-100"
+                  />
                 </div>
                 <span className="inline-flex items-center rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
                   Upcoming
                 </span>
               </div>
-              <h3 className="text-xl font-bold mb-2 text-foreground/80">Study & Task Scheduler</h3>
+              <h3 className="text-xl font-bold mb-2 text-foreground/80">
+                Study & Task Scheduler
+              </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Auto-generate study schedules around your deadlines, classes, and downtime.
+                Auto-generate study schedules around your deadlines, classes,
+                and downtime.
               </p>
             </div>
 
@@ -172,22 +233,30 @@ export default function Home() {
             <div className="h-full relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 p-6 opacity-80 transition-all hover:opacity-100 hover:border-border">
               <div className="flex justify-between items-start mb-4">
                 <div className="p-3 bg-muted rounded-xl">
-                  <Image src="/logo-maskot.png" alt="TaskWeave" width={40} height={40} className="rounded-lg object-contain grayscale opacity-70 transition-all group-hover:grayscale-0 group-hover:opacity-100" />
+                  <Image
+                    src="/optimized/logo-maskot.webp"
+                    alt="TaskWeave"
+                    width={40}
+                    height={40}
+                    className="rounded-lg object-contain grayscale opacity-70 transition-all group-hover:grayscale-0 group-hover:opacity-100"
+                  />
                 </div>
                 <span className="inline-flex items-center rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
                   Upcoming
                 </span>
               </div>
-              <h3 className="text-xl font-bold mb-2 text-foreground/80">TaskWeave</h3>
+              <h3 className="text-xl font-bold mb-2 text-foreground/80">
+                TaskWeave
+              </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Your proactive daily assistant. Prioritize tasks and orchestrate your workflow automatically.
+                Your proactive daily assistant. Prioritize tasks and orchestrate
+                your workflow automatically.
               </p>
             </div>
-
           </div>
         </section>
       </main>
-      
+
       {/* Footer */}
       <footer className="border-t border-border/40 py-8 mt-24">
         <div className="mx-auto max-w-7xl px-6 text-center text-sm text-muted-foreground">

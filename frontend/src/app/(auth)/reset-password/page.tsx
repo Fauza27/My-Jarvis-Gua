@@ -1,11 +1,18 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, Lock } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+} from "lucide-react";
 import Image from "next/image";
 
 const resetPasswordSchema = z
@@ -16,7 +23,10 @@ const resetPasswordSchema = z
       .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
       .regex(/[a-z]/, "Password must contain at least one lowercase letter")
       .regex(/\d/, "Password must contain at least one number")
-      .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character"),
+      .regex(
+        /[!@#$%^&*(),.?":{}|<>]/,
+        "Password must contain at least one special character",
+      ),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -25,6 +35,11 @@ const resetPasswordSchema = z
   });
 
 type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+function subscribeHashChange(callback: () => void) {
+  window.addEventListener("hashchange", callback);
+  return () => window.removeEventListener("hashchange", callback);
+}
 
 function ResetPasswordFallback() {
   return (
@@ -49,7 +64,19 @@ function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [submissionError, setError] = useState<string | null>(null);
+  const hash = useSyncExternalStore(
+    subscribeHashChange,
+    () => window.location.hash,
+    () => "",
+  );
+  const hashParams = new URLSearchParams(hash.substring(1));
+  const hasUrlError = searchParams.get("error") || hashParams.get("error");
+  const error = hasUrlError
+    ? searchParams.get("error_description") ||
+      hashParams.get("error_description") ||
+      "Reset password link is invalid or expired."
+    : submissionError;
   const [success, setSuccess] = useState(false);
 
   const {
@@ -60,34 +87,38 @@ function ResetPasswordContent() {
     resolver: zodResolver(resetPasswordSchema),
   });
 
-  useEffect(() => {
-    // Check for errors in URL
-    const errorParam = searchParams.get("error");
-    const errorDescription = searchParams.get("error_description");
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const hashError = hashParams.get("error");
-    const hashErrorDescription = hashParams.get("error_description");
-
-    if (errorParam || hashError) {
-      setError(errorDescription || hashErrorDescription || "Reset password link is invalid or has expired. Please request a new one.");
-    }
-  }, [searchParams]);
-
   const onSubmit = async (data: ResetPasswordInput) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Get access token from URL hash
+      const { supabase } = await import("@/lib/supabase");
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get("access_token");
-
-      if (!accessToken) {
-        throw new Error("No access token found. Please use the link from your email.");
+      const refreshToken = hashParams.get("refresh_token");
+      const code = searchParams.get("code");
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (!sessionData.session) {
+        if (code) {
+          const { error: exchangeError } =
+            await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) throw exchangeError;
+        } else if (accessToken && refreshToken) {
+          const { error: restoreError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (restoreError) throw restoreError;
+        } else {
+          throw new Error(
+            "Reset session is missing or expired. Please request a new email link.",
+          );
+        }
       }
 
       // Use Supabase to update password
-      const { supabase } = await import("@/lib/supabase");
       const { error: updateError } = await supabase.auth.updateUser({
         password: data.password,
       });
@@ -95,6 +126,8 @@ function ResetPasswordContent() {
       if (updateError) {
         throw updateError;
       }
+      window.history.replaceState(null, "", "/reset-password");
+      await supabase.auth.signOut({ scope: "local" });
 
       setSuccess(true);
       setTimeout(() => {
@@ -113,12 +146,23 @@ function ResetPasswordContent() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="w-full max-w-md bg-card rounded-lg p-8 text-center">
           <div className="inline-flex items-center justify-center mb-4">
-            <Image src="/Login-Head.png" alt="My Jarvis Gua Logo" width={64} height={64} className="rounded-xl" />
+            <Image
+              src="/optimized/Login-Head.webp"
+              alt="My Jarvis Gua Logo"
+              width={64}
+              height={64}
+              className="rounded-xl"
+            />
           </div>
           <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
-          <h1 className="text-2xl font-bold text-foreground mb-2">Reset Password Failed</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">
+            Reset Password Failed
+          </h1>
           <p className="text-muted-foreground mb-4">{error}</p>
-          <button onClick={() => router.push("/forgot-password")} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90">
+          <button
+            onClick={() => router.push("/forgot-password")}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+          >
             Request New Link
           </button>
         </div>
@@ -131,10 +175,18 @@ function ResetPasswordContent() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="w-full max-w-md bg-card rounded-lg p-8 text-center">
           <div className="inline-flex items-center justify-center mb-4">
-            <Image src="/Login-Head.png" alt="My Jarvis Gua Logo" width={64} height={64} className="rounded-xl" />
+            <Image
+              src="/optimized/Login-Head.webp"
+              alt="My Jarvis Gua Logo"
+              width={64}
+              height={64}
+              className="rounded-xl"
+            />
           </div>
           <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-success" />
-          <h1 className="text-2xl font-bold text-foreground mb-2">Password Reset Successful</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">
+            Password Reset Successful
+          </h1>
           <p className="text-muted-foreground">Redirecting to login...</p>
         </div>
       </div>
@@ -146,16 +198,29 @@ function ResetPasswordContent() {
       <div className="w-full max-w-md bg-card rounded-lg p-8">
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center mb-4">
-            <Image src="/Login-Head.png" alt="My Jarvis Gua Logo" width={64} height={64} className="rounded-xl" />
+            <Image
+              src="/optimized/Login-Head.webp"
+              alt="My Jarvis Gua Logo"
+              width={64}
+              height={64}
+              className="rounded-xl"
+            />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Reset Your Password</h1>
-          <p className="text-sm text-muted-foreground mt-2">Enter your new password below</p>
+          <h1 className="text-2xl font-bold text-foreground">
+            Reset Your Password
+          </h1>
+          <p className="text-sm text-muted-foreground mt-2">
+            Enter your new password below
+          </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Password Field */}
           <div className="space-y-1.5">
-            <label htmlFor="password" className="block text-sm font-medium text-foreground">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-foreground"
+            >
               New Password
             </label>
             <div className="relative">
@@ -176,8 +241,17 @@ function ResetPasswordContent() {
                   ${errors.password ? "border-destructive bg-destructive/5 focus:ring-destructive focus:border-destructive" : "border-input bg-background focus:ring-ring"}
                 `}
               />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} disabled={isLoading} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded text-foreground hover:text-muted-foreground">
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={isLoading}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded text-foreground hover:text-muted-foreground"
+              >
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             </div>
             {errors.password && (
@@ -190,7 +264,10 @@ function ResetPasswordContent() {
 
           {/* Confirm Password Field */}
           <div className="space-y-1.5">
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium text-foreground"
+            >
               Confirm New Password
             </label>
             <div className="relative">

@@ -1,8 +1,17 @@
+import {
+  GenerateConnectCodeResponse,
+  MessageResponse,
+  Profile,
+  UpdateProfileInput,
+} from "../types";
+import {
+  fetchWithTimeout,
+  parseErrorMessage,
+  getAuthHeaders,
+} from "@/lib/fetch";
 
-import { GenerateConnectCodeResponse, MessageResponse, Profile, UpdateProfileInput } from "../types";
-import { fetchWithTimeout, parseErrorMessage, getAuthHeaders } from "@/lib/fetch";
-
-const BASE_URL = typeof window === "undefined" ? process.env.NEXT_PUBLIC_API_URL : "";
+const BASE_URL =
+  typeof window === "undefined" ? process.env.NEXT_PUBLIC_API_URL : "";
 
 if (typeof window === "undefined" && !BASE_URL) {
   throw new Error("NEXT_PUBLIC_API_URL environment variable is not defined");
@@ -24,7 +33,9 @@ export const getMyProfile = async (): Promise<Profile> => {
   return res.json();
 };
 
-export const updateMyProfile = async (payload: UpdateProfileInput): Promise<Profile> => {
+export const updateMyProfile = async (
+  payload: UpdateProfileInput,
+): Promise<Profile> => {
   const headers = await getAuthHeaders();
 
   const res = await fetchWithTimeout(`${BASE_URL}/api/profile/me`, {
@@ -41,33 +52,47 @@ export const updateMyProfile = async (payload: UpdateProfileInput): Promise<Prof
   return res.json();
 };
 
-export const generateTelegramConnectCode = async (): Promise<GenerateConnectCodeResponse> => {
-  const headers = await getAuthHeaders();
+export const generateTelegramConnectCode =
+  async (): Promise<GenerateConnectCodeResponse> => {
+    const headers = await getAuthHeaders();
 
-  const res = await fetchWithTimeout(`${BASE_URL}/api/profile/me/telegram/connect-code`, {
-    method: "POST",
-    headers,
-    credentials: "include",
-  });
+    const res = await fetchWithTimeout(
+      `${BASE_URL}/api/profile/me/telegram/connect-code`,
+      {
+        method: "POST",
+        headers,
+        credentials: "include",
+      },
+    );
 
-  if (!res.ok) {
-    throw new Error(await parseErrorMessage(res, "Failed to generate Telegram connect code"));
-  }
+    if (!res.ok) {
+      throw new Error(
+        await parseErrorMessage(
+          res,
+          "Failed to generate Telegram connect code",
+        ),
+      );
+    }
 
-  return res.json();
-};
+    return res.json();
+  };
 
 export const unlinkTelegramAccount = async (): Promise<MessageResponse> => {
   const headers = await getAuthHeaders(false);
 
-  const res = await fetchWithTimeout(`${BASE_URL}/api/profile/me/telegram/unlink`, {
-    method: "DELETE",
-    headers,
-    credentials: "include",
-  });
+  const res = await fetchWithTimeout(
+    `${BASE_URL}/api/profile/me/telegram/unlink`,
+    {
+      method: "DELETE",
+      headers,
+      credentials: "include",
+    },
+  );
 
   if (!res.ok) {
-    throw new Error(await parseErrorMessage(res, "Failed to unlink Telegram account"));
+    throw new Error(
+      await parseErrorMessage(res, "Failed to unlink Telegram account"),
+    );
   }
 
   return res.json();

@@ -1,1 +1,7 @@
-export { profileQueryKeys, useGenerateTelegramConnectCode, useMyProfile, useUnlinkTelegramAccount, useUpdateMyProfile } from "./useProfile";
+export {
+  profileQueryKeys,
+  useGenerateTelegramConnectCode,
+  useMyProfile,
+  useUnlinkTelegramAccount,
+  useUpdateMyProfile,
+} from "./useProfile";

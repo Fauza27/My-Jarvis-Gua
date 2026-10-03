@@ -24,22 +24,44 @@ export default function ForgotPasswordPage() {
               {/* Logo - Responsive: Head for small screens, FullBody for larger screens */}
               <div className="inline-flex items-center justify-center mb-4">
                 {/* Small screens: forgot-password mascot */}
-                <Image src="/Logo-forgot-password-FullBody.png" alt="My Jarvis Gua Forgot Password Logo" width={48} height={48} className="rounded-xl sm:hidden" priority />
+                <Image
+                  src="/optimized/Logo-forgot-password-FullBody.webp"
+                  alt="My Jarvis Gua Forgot Password Logo"
+                  width={48}
+                  height={48}
+                  className="rounded-xl sm:hidden"
+                  priority
+                />
                 {/* Medium screens: forgot-password mascot */}
-                <Image src="/Logo-forgot-password-FullBody.png" alt="My Jarvis Gua Forgot Password Logo" width={120} height={120} className="rounded-xl hidden sm:block" priority />
+                <Image
+                  src="/optimized/Logo-forgot-password-FullBody.webp"
+                  alt="My Jarvis Gua Forgot Password Logo"
+                  width={120}
+                  height={120}
+                  className="rounded-xl hidden sm:block"
+                  priority
+                />
               </div>
 
               {/* Headline */}
-              <h1 className="text-2xl font-bold text-foreground tracking-tight">Reset Password</h1>
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                Reset Password
+              </h1>
 
               {/* Subheading */}
-              <p className="mt-2 text-sm text-muted-foreground">Enter your email to receive a password reset link</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Enter your email to receive a password reset link
+              </p>
             </div>
 
             {/* ── Reset Password (Desktop Only) ──────────────────────────────────── */}
             <div className="hidden lg:block text-center mb-8">
-              <h1 className="text-3xl font-bold text-foreground tracking-tight">Reset your password</h1>
-              <p className="mt-2 text-sm text-muted-foreground">Enter your email and we&apos;ll send you a reset link</p>
+              <h1 className="text-3xl font-bold text-foreground tracking-tight">
+                Reset your password
+              </h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Enter your email and we&apos;ll send you a reset link
+              </p>
             </div>
 
             {/* ── Form Component ──────────────────────────────────────────────*/}
@@ -62,7 +84,10 @@ export default function ForgotPasswordPage() {
             {/* ── Link Terms & Privacy ──────────────────────────────────────────── */}
             <p className="mt-6 text-center text-xs text-muted-foreground">
               Need help?{" "}
-              <Link href="/support" className="hover:underline hover:text-foreground focus:outline-none focus:underline">
+              <Link
+                href="/support"
+                className="hover:underline hover:text-foreground focus:outline-none focus:underline"
+              >
                 Contact Support
               </Link>
             </p>
@@ -73,14 +98,26 @@ export default function ForgotPasswordPage() {
         <aside className="hidden lg:flex items-center justify-center bg-muted/30 slide-in-right">
           <div className="relative w-full max-w-lg text-center">
             {/* Headline */}
-            <h1 className="text-3xl font-bold text-foreground tracking-tight mb-3">Forgot Your Password?</h1>
+            <h1 className="text-3xl font-bold text-foreground tracking-tight mb-3">
+              Forgot Your Password?
+            </h1>
 
             {/* Subheading */}
-            <p className="text-base text-muted-foreground mb-8">No worries! We&apos;ll help you reset it and get back to your AI Co-Pilot</p>
+            <p className="text-base text-muted-foreground mb-8">
+              No worries! We&apos;ll help you reset it and get back to your AI
+              Co-Pilot
+            </p>
 
             {/* Image */}
             <div className="relative">
-              <Image src="/Logo-forgot-password-FullBody.png" alt="My Jarvis Gua - Forgot Password Illustration" width={400} height={400} className="mx-auto" priority />
+              <Image
+                src="/optimized/Logo-forgot-password-FullBody.webp"
+                alt="My Jarvis Gua - Forgot Password Illustration"
+                width={400}
+                height={400}
+                className="mx-auto"
+                priority
+              />
             </div>
           </div>
         </aside>

@@ -24,11 +24,11 @@ export interface CreateExpenseInput {
 export interface UpdateExpenseInput {
   amount?: number;
   type?: "income" | "expense";
-  description?: string;
+  description?: string | null;
   category?: string;
-  subcategory?: string;
-  payment_method?: string;
-  transaction_date?: string;
+  subcategory?: string | null;
+  payment_method?: string | null;
+  transaction_date?: string | null;
 }
 
 export interface ExpensesListResponse {

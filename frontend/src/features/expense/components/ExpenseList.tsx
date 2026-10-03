@@ -1,7 +1,21 @@
 "use client";
 
-import { Pencil, Trash2, ChevronLeft, ChevronRight, Utensils, Car, ShoppingBag, Clapperboard, HeartPulse, Wallet, FileText, GraduationCap, CircleDollarSign } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+  Pencil,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Utensils,
+  Car,
+  ShoppingBag,
+  Clapperboard,
+  HeartPulse,
+  Wallet,
+  FileText,
+  GraduationCap,
+  CircleDollarSign,
+} from "lucide-react";
+import { createElement, useMemo, useState } from "react";
 import { useDeleteExpense, useExpenses } from "../hooks";
 import { Expense } from "../types";
 import { ExpenseEditForm } from "./ExpenseEditForm";
@@ -9,7 +23,8 @@ import { ExpenseEditForm } from "./ExpenseEditForm";
 const currencyFormatter = new Intl.NumberFormat("id-ID", {
   style: "currency",
   currency: "IDR",
-  maximumFractionDigits: 0,
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
 });
 
 type ExpenseListProps = {
@@ -42,27 +57,44 @@ function getCategoryIcon(category: string) {
 
 function formatDate(dateStr: string | undefined): string {
   if (!dateStr) return "";
-  const date = new Date(dateStr);
+  const date = new Date(`${dateStr.slice(0, 10)}T00:00:00`);
   const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const days = Math.round(
+    (Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) -
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())) /
+      86400000,
+  );
 
   if (days === 0) return "Hari ini";
   if (days === 1) return "Kemarin";
-  if (days < 7) return `${days} hari lalu`;
+  if (days > 1 && days < 7) return `${days} hari lalu`;
 
-  return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric" }).format(date);
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
 }
 
-function ExpenseItem({ item, onDelete, onEdit, isDeleting }: { item: Expense; onDelete: (id: string) => void; onEdit: (item: Expense) => void; isDeleting: boolean }) {
+function ExpenseItem({
+  item,
+  onDelete,
+  onEdit,
+  isDeleting,
+}: {
+  item: Expense;
+  onDelete: (id: string) => void;
+  onEdit: (item: Expense) => void;
+  isDeleting: boolean;
+}) {
   const isIncome = item.type === "income";
-  const IconComponent = getCategoryIcon(item.category);
+  const categoryIcon = getCategoryIcon(item.category);
 
   return (
     <div className="group flex items-center gap-4 py-3.5 px-3 transition-colors hover:bg-muted/30 border-b border-border/40 last:border-0">
       {/* Category avatar */}
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted/40 text-muted-foreground border border-border/50 shadow-sm">
-        <IconComponent className="h-4 w-4" />
+        {createElement(categoryIcon, { className: "h-4 w-4" })}
       </div>
 
       {/* Content */}
@@ -71,16 +103,21 @@ function ExpenseItem({ item, onDelete, onEdit, isDeleting }: { item: Expense; on
           {item.description || item.category}
         </p>
         <p className="text-xs text-muted-foreground mt-0.5 font-medium">
-          {item.transaction_date ? formatDate(item.transaction_date) : item.category}
+          {item.transaction_date
+            ? formatDate(item.transaction_date)
+            : item.category}
         </p>
       </div>
 
       {/* Amount & Actions Container */}
       <div className="flex shrink-0 items-center gap-3">
-        <p className={`text-sm font-bold tabular-nums tracking-tight ${
-          isIncome ? "text-success" : "text-foreground"
-        }`}>
-          {isIncome ? "+" : "−"}{currencyFormatter.format(item.amount)}
+        <p
+          className={`text-sm font-bold tabular-nums tracking-tight ${
+            isIncome ? "text-success" : "text-foreground"
+          }`}
+        >
+          {isIncome ? "+" : "−"}
+          {currencyFormatter.format(item.amount)}
         </p>
 
         {/* Actions — appear on hover */}
@@ -157,7 +194,10 @@ export function ExpenseList({
   const totalPages = Math.max(1, Math.ceil(totalData / limit));
   const canGoPrev = currentPage > 1;
   const canGoNext = currentPage < totalPages;
-  const items = useMemo(() => expensesQuery.data?.expenses ?? [], [expensesQuery.data?.expenses]);
+  const items = useMemo(
+    () => expensesQuery.data?.expenses ?? [],
+    [expensesQuery.data?.expenses],
+  );
 
   const handleDelete = async (expenseId: string) => {
     const isConfirmed = window.confirm("Yakin ingin menghapus transaksi ini?");
@@ -176,7 +216,10 @@ export function ExpenseList({
     return (
       <div className="space-y-1">
         {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className="flex items-center gap-4 py-3.5 px-3 border-b border-border/30 last:border-0">
+          <div
+            key={i}
+            className="flex items-center gap-4 py-3.5 px-3 border-b border-border/30 last:border-0"
+          >
             <div className="h-10 w-10 animate-pulse rounded-lg bg-muted/40" />
             <div className="flex-1 space-y-2">
               <div className="h-3.5 w-2/5 animate-pulse rounded-md bg-muted/40" />
@@ -192,7 +235,9 @@ export function ExpenseList({
   if (expensesQuery.isError) {
     return (
       <p className="py-8 text-center text-sm text-destructive">
-        {expensesQuery.error instanceof Error ? expensesQuery.error.message : "Gagal memuat transaksi"}
+        {expensesQuery.error instanceof Error
+          ? expensesQuery.error.message
+          : "Gagal memuat transaksi"}
       </p>
     );
   }
@@ -201,13 +246,19 @@ export function ExpenseList({
     <div>
       {deleteExpenseMutation.isError && (
         <p className="mb-3 text-sm text-destructive">
-          {deleteExpenseMutation.error instanceof Error ? deleteExpenseMutation.error.message : "Gagal menghapus transaksi"}
+          {deleteExpenseMutation.error instanceof Error
+            ? deleteExpenseMutation.error.message
+            : "Gagal menghapus transaksi"}
         </p>
       )}
 
       {editingExpense && (
         <div className="mb-4">
-          <ExpenseEditForm expense={editingExpense} onCancel={() => setEditingExpense(null)} onSuccess={() => setEditingExpense(null)} />
+          <ExpenseEditForm
+            expense={editingExpense}
+            onCancel={() => setEditingExpense(null)}
+            onSuccess={() => setEditingExpense(null)}
+          />
         </div>
       )}
 
@@ -216,8 +267,12 @@ export function ExpenseList({
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted/40">
             <span className="text-lg">💰</span>
           </div>
-          <p className="text-sm font-medium text-foreground">Belum ada transaksi</p>
-          <p className="mt-1 text-xs text-muted-foreground">Transaksi yang kamu buat akan muncul di sini</p>
+          <p className="text-sm font-medium text-foreground">
+            Belum ada transaksi
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Transaksi yang kamu buat akan muncul di sini
+          </p>
         </div>
       ) : (
         <>
@@ -225,14 +280,24 @@ export function ExpenseList({
           <div className="mb-1 px-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               {totalData} Transaksi
-              {expensesQuery.isFetching && <span className="ml-2 animate-pulse lowercase">· memperbarui</span>}
+              {expensesQuery.isFetching && (
+                <span className="ml-2 animate-pulse lowercase">
+                  · memperbarui
+                </span>
+              )}
             </p>
           </div>
 
           {/* Items */}
           <div>
             {items.map((item) => (
-              <ExpenseItem key={item.id} item={item} onDelete={handleDelete} onEdit={setEditingExpense} isDeleting={deleteExpenseMutation.isPending} />
+              <ExpenseItem
+                key={item.id}
+                item={item}
+                onDelete={handleDelete}
+                onEdit={setEditingExpense}
+                isDeleting={deleteExpenseMutation.isPending}
+              />
             ))}
           </div>
 

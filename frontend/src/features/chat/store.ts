@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
 import { ConversationMessage } from "./types";
 
 const MAX_HISTORY_SIZE = 20;
@@ -12,23 +11,15 @@ interface ChatState {
   clearConversation: () => void;
 }
 
-export const useChatStore = create<ChatState>()(
-  persist(
-    (set) => ({
-      conversationHistory: [],
-      lastActionTaken: [],
-      setConversationHistory: (messages) =>
-        set({ conversationHistory: messages.slice(-MAX_HISTORY_SIZE) }),
-      setLastActionTaken: (actions) => set({ lastActionTaken: actions }),
-      clearConversation: () => set({ conversationHistory: [], lastActionTaken: [] }),
-    }),
-    {
-      name: "chat-storage",
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        conversationHistory: state.conversationHistory.slice(-MAX_HISTORY_SIZE),
-        lastActionTaken: state.lastActionTaken,
-      }),
-    },
-  ),
-);
+// Financial conversations stay in memory and are cleared when the account changes.
+export const useChatStore = create<ChatState>()((set) => ({
+  conversationHistory: [],
+  lastActionTaken: [],
+  setConversationHistory: (messages) =>
+    set({ conversationHistory: messages.slice(-MAX_HISTORY_SIZE) }),
+  setLastActionTaken: (actions) => set({ lastActionTaken: actions }),
+  clearConversation: () => {
+    if (typeof window !== "undefined") localStorage.removeItem("chat-storage");
+    set({ conversationHistory: [], lastActionTaken: [] });
+  },
+}));

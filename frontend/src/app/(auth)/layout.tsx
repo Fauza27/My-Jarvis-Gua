@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   description: "Login or register to access your My Jarvis Gua account",
 };
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return <div className="min-h-svh bg-background">{children}</div>;
 }

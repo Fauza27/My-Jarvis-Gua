@@ -5,7 +5,10 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, CheckCircle2, Loader2, Mail, Send } from "lucide-react";
-import { ForgotPasswordInput, forgotPasswordSchema } from "../validations/authSchema";
+import {
+  ForgotPasswordInput,
+  forgotPasswordSchema,
+} from "../validations/authSchema";
 import { forgotPassword } from "../api/authApi";
 import { mapServerError } from "../utils";
 
@@ -37,7 +40,10 @@ export function ForgotPasswordForm() {
       setFormState("success");
     } catch (error) {
       setFormState("error");
-      const errorMessage = error instanceof Error ? mapServerError(error.message) : "An unexpected error occurred. Please try again.";
+      const errorMessage =
+        error instanceof Error
+          ? mapServerError(error.message)
+          : "An unexpected error occurred. Please try again.";
       setServerError(errorMessage);
       setFormState("idle");
     }
@@ -48,7 +54,11 @@ export function ForgotPasswordForm() {
   const isDisabled = isLoading || isSuccess;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5 bg-card text-card-foreground">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+      className="space-y-5 bg-card text-card-foreground"
+    >
       {serverError && (
         <div
           role="alert"
@@ -78,7 +88,10 @@ export function ForgotPasswordForm() {
           <CheckCircle2 className="w-5 h-5 shrink-0 text-success" />
           <div className="space-y-1">
             <p className="font-medium">Email Sent!</p>
-            <p className="text-success/90">We&apos;ve sent a password reset link to your email. Please check your inbox and follow the instructions.</p>
+            <p className="text-success/90">
+              We&apos;ve sent a password reset link to your email. Please check
+              your inbox and follow the instructions.
+            </p>
           </div>
         </div>
       )}
@@ -86,12 +99,18 @@ export function ForgotPasswordForm() {
       {!isSuccess && (
         <>
           <div className="space-y-1.5">
-            <label htmlFor="email" className="block text-sm font-medium text-foreground">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-foreground"
+            >
               Email Address
             </label>
 
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+              <Mail
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
+                aria-hidden="true"
+              />
               <input
                 {...register("email")}
                 id="email"
@@ -114,7 +133,11 @@ export function ForgotPasswordForm() {
             </div>
 
             {errors.email && (
-              <p id="email-error" role="alert" className="flex items-center gap-1.5 text-xs text-destructive mt-1">
+              <p
+                id="email-error"
+                role="alert"
+                className="flex items-center gap-1.5 text-xs text-destructive mt-1"
+              >
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 {errors.email.message}
               </p>

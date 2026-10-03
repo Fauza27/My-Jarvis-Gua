@@ -35,7 +35,10 @@ export function ThemeSync() {
 
     return () => {
       window.removeEventListener("storage", onStorage);
-      window.removeEventListener("theme:change", onThemeChange as EventListener);
+      window.removeEventListener(
+        "theme:change",
+        onThemeChange as EventListener,
+      );
     };
   }, []);
 

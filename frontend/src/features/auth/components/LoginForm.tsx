@@ -4,9 +4,18 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, LogIn, Mail, Lock } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  Loader2,
+  LogIn,
+  Mail,
+  Lock,
+} from "lucide-react";
 import { LoginInput, loginSchema } from "../validations/authSchema";
-import { login, syncSessionCookies } from "../api/authApi";
+import { login } from "../api/authApi";
 import { useAuthStore } from "../store";
 import { mapServerError } from "../utils";
 import Link from "next/link";
@@ -39,21 +48,22 @@ export function LoginForm() {
 
     try {
       const response = await login(data.email, data.password);
-      setAuth(response.access_token, response.refresh_token, response.expires_at, response.user);
-
-      // Sync HttpOnly cookies for server-side route protection
-      void syncSessionCookies({
-        access_token: response.access_token,
-        refresh_token: response.refresh_token,
-        expires_at: response.expires_at,
-      }).catch((err) => console.error("Session cookie sync failed:", err));
+      setAuth(
+        response.access_token,
+        response.refresh_token,
+        response.expires_at,
+        response.user,
+      );
 
       setFormState("success");
       await new Promise((resolve) => setTimeout(resolve, 800));
       router.push("/dashboard");
     } catch (error) {
       setFormState("error");
-      const errorMessage = error instanceof Error ? mapServerError(error.message) : "An unexpected error occurred. Please try again.";
+      const errorMessage =
+        error instanceof Error
+          ? mapServerError(error.message)
+          : "An unexpected error occurred. Please try again.";
       setServerError(errorMessage);
       setFormState("idle");
     }
@@ -64,7 +74,11 @@ export function LoginForm() {
   const isDisabled = isLoading || isSuccess;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5 bg-card text-card-foreground">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+      className="space-y-5 bg-card text-card-foreground"
+    >
       {serverError && (
         <div
           role="alert"
@@ -97,12 +111,18 @@ export function LoginForm() {
       )}
 
       <div className="space-y-1.5">
-        <label htmlFor="email" className="block text-sm font-medium text-foreground">
+        <label
+          htmlFor="email"
+          className="block text-sm font-medium text-foreground"
+        >
           Email
         </label>
 
         <div className="relative">
-          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+          <Mail
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
+            aria-hidden="true"
+          />
           <input
             {...register("email")}
             id="email"
@@ -124,7 +144,11 @@ export function LoginForm() {
         </div>
 
         {errors.email && (
-          <p id="email-error" role="alert" className="flex items-center gap-1.5 text-xs text-destructive mt-1">
+          <p
+            id="email-error"
+            role="alert"
+            className="flex items-center gap-1.5 text-xs text-destructive mt-1"
+          >
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             {errors.email.message}
           </p>
@@ -132,11 +156,17 @@ export function LoginForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="password" className="block text-sm font-medium text-foreground">
+        <label
+          htmlFor="password"
+          className="block text-sm font-medium text-foreground"
+        >
           Password
         </label>
         <div className="relative">
-          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+          <Lock
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
+            aria-hidden="true"
+          />
           <input
             {...register("password")}
             id="password"
@@ -169,17 +199,29 @@ export function LoginForm() {
               transition-colors duration-150
             "
           >
-            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {showPassword ? (
+              <EyeOff className="w-4 h-4" />
+            ) : (
+              <Eye className="w-4 h-4" />
+            )}
           </button>
         </div>
         {errors.password && (
-          <p id="password-error" role="alert" className="flex items-center gap-1.5 text-xs text-destructive mt-1">
+          <p
+            id="password-error"
+            role="alert"
+            className="flex items-center gap-1.5 text-xs text-destructive mt-1"
+          >
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             {errors.password.message}
           </p>
         )}
         <div className="flex items-center justify-end mt-2">
-          <Link href="/forgot-password" className="text-xs text-foreground hover:text-primary hover:underline focus:outline-none focus:underline" tabIndex={isDisabled ? -1 : 0}>
+          <Link
+            href="/forgot-password"
+            className="text-xs text-foreground hover:text-primary hover:underline focus:outline-none focus:underline"
+            tabIndex={isDisabled ? -1 : 0}
+          >
             Forgot password?
           </Link>
         </div>

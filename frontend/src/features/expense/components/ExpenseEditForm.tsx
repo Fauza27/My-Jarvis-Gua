@@ -14,7 +14,11 @@ type ExpenseEditFormProps = {
   onSuccess?: () => void;
 };
 
-export function ExpenseEditForm({ expense, onCancel, onSuccess }: ExpenseEditFormProps) {
+export function ExpenseEditForm({
+  expense,
+  onCancel,
+  onSuccess,
+}: ExpenseEditFormProps) {
   const updateExpenseMutation = useUpdateExpense();
 
   const {
@@ -51,10 +55,10 @@ export function ExpenseEditForm({ expense, onCancel, onSuccess }: ExpenseEditFor
   const onSubmit = async (values: UpdateExpenseInput) => {
     const payload: UpdateExpenseInput = {
       ...values,
-      description: values.description || undefined,
-      subcategory: values.subcategory || undefined,
-      payment_method: values.payment_method || undefined,
-      transaction_date: values.transaction_date || undefined,
+      description: values.description || null,
+      subcategory: values.subcategory || null,
+      payment_method: values.payment_method || null,
+      transaction_date: values.transaction_date || null,
     };
 
     await updateExpenseMutation.mutateAsync({ expenseId: expense.id, payload });
@@ -63,66 +67,141 @@ export function ExpenseEditForm({ expense, onCancel, onSuccess }: ExpenseEditFor
 
   const isLoading = isSubmitting || updateExpenseMutation.isPending;
 
-  const inputClass = "h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-ring transition-all";
+  const inputClass =
+    "h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-ring transition-all";
 
   return (
     <div className="rounded-xl border border-border/40 bg-card/30 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground">Edit Transaksi</h3>
-        <button type="button" onClick={onCancel} className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+        <h3 className="text-sm font-semibold text-foreground">
+          Edit Transaksi
+        </h3>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+        >
           <X className="h-4 w-4" />
         </button>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="grid grid-cols-1 md:grid-cols-2 gap-3"
+      >
         <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">Jumlah</label>
-          <input type="number" step="0.01" {...register("amount", { valueAsNumber: true })} className={inputClass} />
-          {errors.amount && <p className="mt-1 text-xs text-destructive">{errors.amount.message}</p>}
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">
+            Jumlah
+          </label>
+          <input
+            type="number"
+            step="0.01"
+            {...register("amount", { valueAsNumber: true })}
+            className={inputClass}
+          />
+          {errors.amount && (
+            <p className="mt-1 text-xs text-destructive">
+              {errors.amount.message}
+            </p>
+          )}
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">Tipe</label>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">
+            Tipe
+          </label>
           <select {...register("type")} className={inputClass}>
             <option value="expense">Expense</option>
             <option value="income">Income</option>
           </select>
-          {errors.type && <p className="mt-1 text-xs text-destructive">{errors.type.message}</p>}
+          {errors.type && (
+            <p className="mt-1 text-xs text-destructive">
+              {errors.type.message}
+            </p>
+          )}
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">Kategori</label>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">
+            Kategori
+          </label>
           <input type="text" {...register("category")} className={inputClass} />
-          {errors.category && <p className="mt-1 text-xs text-destructive">{errors.category.message}</p>}
+          {errors.category && (
+            <p className="mt-1 text-xs text-destructive">
+              {errors.category.message}
+            </p>
+          )}
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">Subkategori</label>
-          <input type="text" {...register("subcategory")} className={inputClass} />
-          {errors.subcategory && <p className="mt-1 text-xs text-destructive">{errors.subcategory.message}</p>}
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">
+            Subkategori
+          </label>
+          <input
+            type="text"
+            {...register("subcategory")}
+            className={inputClass}
+          />
+          {errors.subcategory && (
+            <p className="mt-1 text-xs text-destructive">
+              {errors.subcategory.message}
+            </p>
+          )}
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">Metode Pembayaran</label>
-          <input type="text" {...register("payment_method")} className={inputClass} />
-          {errors.payment_method && <p className="mt-1 text-xs text-destructive">{errors.payment_method.message}</p>}
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">
+            Metode Pembayaran
+          </label>
+          <input
+            type="text"
+            {...register("payment_method")}
+            className={inputClass}
+          />
+          {errors.payment_method && (
+            <p className="mt-1 text-xs text-destructive">
+              {errors.payment_method.message}
+            </p>
+          )}
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">Tanggal Transaksi</label>
-          <input type="date" {...register("transaction_date")} className={inputClass} />
-          {errors.transaction_date && <p className="mt-1 text-xs text-destructive">{errors.transaction_date.message}</p>}
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">
+            Tanggal Transaksi
+          </label>
+          <input
+            type="date"
+            {...register("transaction_date")}
+            className={inputClass}
+          />
+          {errors.transaction_date && (
+            <p className="mt-1 text-xs text-destructive">
+              {errors.transaction_date.message}
+            </p>
+          )}
         </div>
 
         <div className="md:col-span-2">
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">Deskripsi</label>
-          <textarea rows={2} {...register("description")} className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-ring transition-all" />
-          {errors.description && <p className="mt-1 text-xs text-destructive">{errors.description.message}</p>}
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">
+            Deskripsi
+          </label>
+          <textarea
+            rows={2}
+            {...register("description")}
+            className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-ring transition-all"
+          />
+          {errors.description && (
+            <p className="mt-1 text-xs text-destructive">
+              {errors.description.message}
+            </p>
+          )}
         </div>
 
         {updateExpenseMutation.isError && (
           <div className="md:col-span-2 rounded-lg bg-destructive/5 px-3 py-2 text-xs text-destructive">
-            {updateExpenseMutation.error instanceof Error ? updateExpenseMutation.error.message : "Gagal memperbarui transaksi"}
+            {updateExpenseMutation.error instanceof Error
+              ? updateExpenseMutation.error.message
+              : "Gagal memperbarui transaksi"}
           </div>
         )}
 
@@ -132,7 +211,11 @@ export function ExpenseEditForm({ expense, onCancel, onSuccess }: ExpenseEditFor
             disabled={isLoading}
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
-            {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {isLoading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )}
             {isLoading ? "Menyimpan..." : "Simpan"}
           </button>
           <button

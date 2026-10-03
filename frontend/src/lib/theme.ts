@@ -1,5 +1,14 @@
 export const THEME_STORAGE_KEY = "ui.darkMode";
 
+export function subscribeThemeChange(callback: () => void): () => void {
+  window.addEventListener("storage", callback);
+  window.addEventListener("theme:change", callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("theme:change", callback);
+  };
+}
+
 export function getStoredDarkMode(): boolean | null {
   if (typeof window === "undefined") {
     return null;
@@ -35,6 +44,8 @@ export function setDarkModePreference(enabled: boolean): void {
   applyDarkMode(enabled);
 
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent("theme:change", { detail: { darkMode: enabled } }));
+    window.dispatchEvent(
+      new CustomEvent("theme:change", { detail: { darkMode: enabled } }),
+    );
   }
 }

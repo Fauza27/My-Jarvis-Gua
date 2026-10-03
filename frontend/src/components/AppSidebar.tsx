@@ -4,7 +4,15 @@ import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CirclePlus, House, MessageCircle, Settings, UserRound, PanelLeft, PanelLeftClose } from "lucide-react";
+import {
+  CirclePlus,
+  House,
+  MessageCircle,
+  Settings,
+  UserRound,
+  PanelLeft,
+  PanelLeftClose,
+} from "lucide-react";
 import { useSidebarStore } from "@/features/sidebar/store";
 
 interface AppSidebarProps {
@@ -17,7 +25,12 @@ interface AppSidebarProps {
 const navItems = [
   { href: "/dashboard", icon: House, label: "Home" },
   { href: "/dashboard/add", icon: CirclePlus, label: "Add" },
-  { href: "/dashboard/chat", icon: MessageCircle, label: "Chat", useImage: true },
+  {
+    href: "/dashboard/chat",
+    icon: MessageCircle,
+    label: "Chat",
+    useImage: true,
+  },
   { href: "/dashboard/settings", icon: Settings, label: "Settings" },
   { href: "/dashboard/profile", icon: UserRound, label: "Profile" },
 ];
@@ -51,13 +64,15 @@ export function AppSidebar({ avatar }: AppSidebarProps) {
           <div className="flex items-center justify-between px-4 pt-4 pb-2">
             <Link href="/dashboard" className="flex items-center gap-2.5">
               <Image
-                src="/Logo-Finance-Tracker-HeadVersion(small).png"
+                src="/optimized/Logo-Finance-Tracker-HeadVersion(small).webp"
                 alt="Life OS Logo"
                 width={28}
                 height={28}
                 className="rounded-lg"
               />
-              <span className="text-base font-bold text-sidebar-foreground tracking-tight">Life OS</span>
+              <span className="text-base font-bold text-sidebar-foreground tracking-tight">
+                Life OS
+              </span>
             </Link>
             <button
               type="button"
@@ -74,7 +89,9 @@ export function AppSidebar({ avatar }: AppSidebarProps) {
           <nav className="flex-1 overflow-y-auto px-3 py-2">
             <ul className="space-y-0.5">
               {navItems.map(({ href, icon: Icon, label, useImage }) => {
-                const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
+                const isActive =
+                  pathname === href ||
+                  (href !== "/dashboard" && pathname.startsWith(href));
                 return (
                   <li key={href}>
                     <Link
@@ -87,14 +104,16 @@ export function AppSidebar({ avatar }: AppSidebarProps) {
                     >
                       {useImage ? (
                         <Image
-                          src="/Logo-Chat.png"
+                          src="/optimized/Logo-Chat.webp"
                           alt="Chat"
                           width={40}
                           height={40}
                           className="h-7 w-7 object-contain"
                         />
                       ) : (
-                        <Icon className={`h-[18px] w-[18px] ${isActive ? "stroke-[2.5]" : "stroke-[1.8]"}`} />
+                        <Icon
+                          className={`h-[18px] w-[18px] ${isActive ? "stroke-[2.5]" : "stroke-[1.8]"}`}
+                        />
                       )}
                       <span>{label}</span>
                     </Link>
@@ -112,6 +131,7 @@ export function AppSidebar({ avatar }: AppSidebarProps) {
             >
               {avatar.avatar_url ? (
                 <Image
+                  unoptimized
                   src={avatar.avatar_url}
                   alt="avatar"
                   width={32}
@@ -120,7 +140,7 @@ export function AppSidebar({ avatar }: AppSidebarProps) {
                 />
               ) : (
                 <Image
-                  src="/Logo-profile.png"
+                  src="/optimized/Logo-profile.webp"
                   alt="avatar"
                   width={32}
                   height={32}
@@ -128,7 +148,9 @@ export function AppSidebar({ avatar }: AppSidebarProps) {
                 />
               )}
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-sidebar-foreground">{avatar.display_name}</p>
+                <p className="truncate text-sm font-semibold text-sidebar-foreground">
+                  {avatar.display_name}
+                </p>
               </div>
             </Link>
           </div>

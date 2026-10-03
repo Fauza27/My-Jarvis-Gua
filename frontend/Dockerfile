@@ -1,5 +1,5 @@
-FROM node:20-alpine AS base
-RUN npm install -g pnpm
+FROM node:24-alpine AS base
+RUN npm install -g pnpm@10.30.0
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -60,4 +60,5 @@ ENV PORT=3000
 
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/next-config-js/output
-CMD HOSTNAME="0.0.0.0" node server.js
+ENV HOSTNAME=0.0.0.0
+CMD ["node", "server.js"]

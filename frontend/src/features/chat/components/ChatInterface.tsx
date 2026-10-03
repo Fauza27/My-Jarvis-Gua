@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Search, Receipt, BarChart3, PiggyBank } from "lucide-react";
 import Image from "next/image";
 import { ChatComposer } from "./ChatComposer";
@@ -12,23 +12,39 @@ import { useChatStore } from "../store";
 type ChatPanelMode = "chat" | "search";
 
 const quickActions = [
-  { label: "Catat Pengeluaran", icon: Receipt, prompt: "Catat pengeluaran 50rb untuk makan siang" },
-  { label: "Ringkasan Keuangan", icon: BarChart3, prompt: "Berikan ringkasan keuangan bulan ini" },
-  { label: "Cari Transaksi", icon: Search, prompt: "Cari pengeluaran untuk transportasi" },
-  { label: "Tips Hemat", icon: PiggyBank, prompt: "Berikan tips menghemat pengeluaran" },
+  {
+    label: "Catat Pengeluaran",
+    icon: Receipt,
+    prompt: "Catat pengeluaran 50rb untuk makan siang",
+  },
+  {
+    label: "Ringkasan Keuangan",
+    icon: BarChart3,
+    prompt: "Berikan ringkasan keuangan bulan ini",
+  },
+  {
+    label: "Cari Transaksi",
+    icon: Search,
+    prompt: "Cari pengeluaran untuk transportasi",
+  },
+  {
+    label: "Tips Hemat",
+    icon: PiggyBank,
+    prompt: "Berikan tips menghemat pengeluaran",
+  },
 ];
 
 export function ChatInterface() {
   const [input, setInput] = useState("");
   const [activeMode, setActiveMode] = useState<ChatPanelMode>("chat");
-  const conversationHistory = useChatStore((state) => state.conversationHistory);
+  const conversationHistory = useChatStore(
+    (state) => state.conversationHistory,
+  );
   const latestActions = useChatStore((state) => state.lastActionTaken);
   const clearConversation = useChatStore((state) => state.clearConversation);
 
   const { sendMessage, isPending, error } = useSendChatMessage();
   const listAnchorRef = useRef<HTMLDivElement>(null);
-
-  const canSubmit = useMemo(() => Boolean(input.trim()) && !isPending, [input, isPending]);
 
   const handleSend = (message?: string) => {
     const text = (message || input).trim();
@@ -106,12 +122,17 @@ export function ChatInterface() {
 
         {activeMode === "chat" ? (
           <div className="flex min-h-0 flex-1 flex-col">
+            {error && isEmpty && (
+              <p role="alert" className="p-4 text-destructive">
+                {error.message}
+              </p>
+            )}
             {isEmpty ? (
               /* Welcome screen — Claude.ai style */
               <div className="flex flex-1 flex-col items-center justify-center px-4">
                 <div className="flex flex-col items-center text-center max-w-lg">
                   <Image
-                    src="/Logo-Chat.png"
+                    src="/optimized/Logo-Chat.webp"
                     alt="Life OS Chat"
                     width={64}
                     height={64}
@@ -121,7 +142,8 @@ export function ChatInterface() {
                     Ada yang bisa dibantu?
                   </h2>
                   <p className="mt-2 text-sm text-muted-foreground max-w-sm">
-                    Tanya apa saja tentang keuanganmu — catat pengeluaran, lihat ringkasan, atau cari transaksi.
+                    Tanya apa saja tentang keuanganmu — catat pengeluaran, lihat
+                    ringkasan, atau cari transaksi.
                   </p>
                 </div>
 
@@ -143,7 +165,12 @@ export function ChatInterface() {
 
                 {/* Input di welcome screen */}
                 <div className="mt-8 w-full max-w-2xl">
-                  <ChatComposer value={input} onChange={setInput} onSubmit={() => handleSend()} disabled={isPending} />
+                  <ChatComposer
+                    value={input}
+                    onChange={setInput}
+                    onSubmit={() => handleSend()}
+                    disabled={isPending}
+                  />
                 </div>
               </div>
             ) : (
@@ -153,16 +180,28 @@ export function ChatInterface() {
                   <div className="mx-auto max-w-3xl px-4 py-5 md:px-6">
                     {error && (
                       <p className="mb-3 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-2.5 text-xs text-destructive">
-                        {error instanceof Error ? error.message : "Terjadi error saat mengirim pesan"}
+                        {error instanceof Error
+                          ? error.message
+                          : "Terjadi error saat mengirim pesan"}
                       </p>
                     )}
 
-                    <ChatMessageList messages={conversationHistory} isPending={isPending} latestActions={latestActions} className="pb-4" />
+                    <ChatMessageList
+                      messages={conversationHistory}
+                      isPending={isPending}
+                      latestActions={latestActions}
+                      className="pb-4"
+                    />
                     <div ref={listAnchorRef} />
                   </div>
                 </div>
                 <div className="mx-auto w-full max-w-3xl">
-                  <ChatComposer value={input} onChange={setInput} onSubmit={() => handleSend()} disabled={isPending} />
+                  <ChatComposer
+                    value={input}
+                    onChange={setInput}
+                    onSubmit={() => handleSend()}
+                    disabled={isPending}
+                  />
                 </div>
               </>
             )}

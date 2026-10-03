@@ -11,7 +11,14 @@ type DashboardCardProps = {
   disabled?: boolean;
 };
 
-export function DashboardCard({ title, icon: Icon, iconImage, href, description, disabled = false }: DashboardCardProps) {
+export function DashboardCard({
+  title,
+  icon: Icon,
+  iconImage,
+  href,
+  description,
+  disabled = false,
+}: DashboardCardProps) {
   const cardContent = (
     <div
       className={`
@@ -29,17 +36,31 @@ export function DashboardCard({ title, icon: Icon, iconImage, href, description,
         </span>
       )}
       <div className={iconImage ? "pb-14 pr-8" : "pb-14 pr-12"}>
-        <h3 className="text-sm font-semibold text-card-foreground md:text-base">{title}</h3>
-        {description && <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{description}</p>}
+        <h3 className="text-sm font-semibold text-card-foreground md:text-base">
+          {title}
+        </h3>
+        {description && (
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            {description}
+          </p>
+        )}
       </div>
 
       {iconImage ? (
         <div className="pointer-events-none absolute bottom-0 right-1 h-28 w-24 sm:h-32 sm:w-28">
-          <Image src={iconImage} alt={`${title} icon`} fill className="object-contain object-bottom scale-125 origin-bottom-right" sizes="112px" />
+          <Image
+            src={iconImage}
+            alt={`${title} icon`}
+            fill
+            className="object-contain object-bottom scale-125 origin-bottom-right"
+            sizes="112px"
+          />
         </div>
       ) : (
         <div className="absolute right-4 bottom-4">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/15 transition-colors">{Icon && <Icon className="w-5 h-5 text-primary" />}</div>
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/15 transition-colors">
+            {Icon && <Icon className="w-5 h-5 text-primary" />}
+          </div>
         </div>
       )}
     </div>

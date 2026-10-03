@@ -6,11 +6,13 @@ import { ExpenseForm } from "@/features/expense/components/ExpenseForm";
 import { ExpenseList } from "@/features/expense/components/ExpenseList";
 import { useExpenseSummaryAllTime } from "@/features/expense/hooks";
 import { Plus, X, SlidersHorizontal, RotateCcw, Search } from "lucide-react";
+import { Modal } from "@/components/Modal";
 
 const currencyFormatter = new Intl.NumberFormat("id-ID", {
   style: "currency",
   currency: "IDR",
-  maximumFractionDigits: 0,
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
 });
 
 export default function ExpensePage() {
@@ -41,13 +43,29 @@ export default function ExpensePage() {
     return "all" as const;
   }, [searchParams]);
 
-  const categoryFilter = useMemo(() => searchParams.get("category") ?? "", [searchParams]);
-  const searchQuery = useMemo(() => searchParams.get("q") ?? "", [searchParams]);
-  const dateFromFilter = useMemo(() => searchParams.get("date_from") ?? "", [searchParams]);
-  const dateToFilter = useMemo(() => searchParams.get("date_to") ?? "", [searchParams]);
+  const categoryFilter = useMemo(
+    () => searchParams.get("category") ?? "",
+    [searchParams],
+  );
+  const searchQuery = useMemo(
+    () => searchParams.get("q") ?? "",
+    [searchParams],
+  );
+  const dateFromFilter = useMemo(
+    () => searchParams.get("date_from") ?? "",
+    [searchParams],
+  );
+  const dateToFilter = useMemo(
+    () => searchParams.get("date_to") ?? "",
+    [searchParams],
+  );
   const sortBy = useMemo(() => {
     const raw = searchParams.get("sort_by");
-    if (raw === "created_at" || raw === "transaction_date" || raw === "amount") {
+    if (
+      raw === "created_at" ||
+      raw === "transaction_date" ||
+      raw === "amount"
+    ) {
       return raw;
     }
     return "created_at" as const;
@@ -59,18 +77,26 @@ export default function ExpensePage() {
     }
     return "desc" as const;
   }, [searchParams]);
-  const isDateRangeInvalid = Boolean(dateFromFilter && dateToFilter && dateFromFilter > dateToFilter);
+  const isDateRangeInvalid = Boolean(
+    dateFromFilter && dateToFilter && dateFromFilter > dateToFilter,
+  );
 
   const [categoryInput, setCategoryInput] = useState(categoryFilter);
   const [searchInput, setSearchInput] = useState(searchQuery);
+  const [previousCategoryFilter, setPreviousCategoryFilter] =
+    useState(categoryFilter);
+  const [previousSearchQuery, setPreviousSearchQuery] = useState(searchQuery);
 
-  useEffect(() => {
+  // Adjust drafts during the same render when browser navigation changes the URL.
+  if (previousCategoryFilter !== categoryFilter) {
+    setPreviousCategoryFilter(categoryFilter);
     setCategoryInput(categoryFilter);
-  }, [categoryFilter]);
+  }
 
-  useEffect(() => {
+  if (previousSearchQuery !== searchQuery) {
+    setPreviousSearchQuery(searchQuery);
     setSearchInput(searchQuery);
-  }, [searchQuery]);
+  }
 
   const updateSearchParams = useCallback(
     (updates: Record<string, string | null>) => {
@@ -116,7 +142,10 @@ export default function ExpensePage() {
       const nextValue = categoryInput.trim();
       const currentValue = categoryFilter.trim();
       if (nextValue === currentValue) return;
-      updateSearchParams({ category: nextValue ? nextValue : null, page: null });
+      updateSearchParams({
+        category: nextValue ? nextValue : null,
+        page: null,
+      });
     }, 450);
     return () => clearTimeout(timeoutId);
   }, [categoryInput, categoryFilter, updateSearchParams]);
@@ -147,12 +176,20 @@ export default function ExpensePage() {
     updateSearchParams({ date_to: value || null, page: null });
   };
 
-  const handleSortByChange = (value: "created_at" | "transaction_date" | "amount") => {
-    updateSearchParams({ sort_by: value === "created_at" ? null : value, page: null });
+  const handleSortByChange = (
+    value: "created_at" | "transaction_date" | "amount",
+  ) => {
+    updateSearchParams({
+      sort_by: value === "created_at" ? null : value,
+      page: null,
+    });
   };
 
   const handleSortOrderChange = (value: "asc" | "desc") => {
-    updateSearchParams({ sort_order: value === "desc" ? null : value, page: null });
+    updateSearchParams({
+      sort_order: value === "desc" ? null : value,
+      page: null,
+    });
   };
 
   const handleResetFilters = () => {
@@ -168,7 +205,14 @@ export default function ExpensePage() {
     });
   };
 
-  const hasActiveFilters = typeFilter !== "all" || categoryFilter || searchQuery || dateFromFilter || dateToFilter || sortBy !== "created_at" || sortOrder !== "desc";
+  const hasActiveFilters =
+    typeFilter !== "all" ||
+    categoryFilter ||
+    searchQuery ||
+    dateFromFilter ||
+    dateToFilter ||
+    sortBy !== "created_at" ||
+    sortOrder !== "desc";
 
   const netBalance = summary?.net_balance ?? 0;
 
@@ -180,29 +224,40 @@ export default function ExpensePage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
             Financial Operations
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">Overview of your recent transactions</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Overview of your recent transactions
+          </p>
         </div>
 
         {/* ── Summary row ── */}
         {!summaryQuery.isLoading && !summaryQuery.isError && (
           <div className="mb-8 rounded-xl border border-border/40 bg-card shadow-sm overflow-hidden flex flex-col sm:flex-row sm:divide-x divide-y sm:divide-y-0 divide-border/40">
             <div className="flex-1 p-5">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">Total Income</p>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">
+                Total Income
+              </p>
               <p className="text-2xl font-bold text-foreground tabular-nums tracking-tight">
                 {currencyFormatter.format(summary?.total_income ?? 0)}
               </p>
             </div>
             <div className="flex-1 p-5">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">Total Expense</p>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">
+                Total Expense
+              </p>
               <p className="text-2xl font-bold text-foreground tabular-nums tracking-tight">
                 {currencyFormatter.format(summary?.total_expense ?? 0)}
               </p>
             </div>
             <div className="flex-1 p-5 bg-muted/5">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">Net Balance</p>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">
+                Net Balance
+              </p>
               <div className="flex items-baseline gap-2">
-                <p className={`text-2xl font-bold tabular-nums tracking-tight ${netBalance >= 0 ? "text-foreground" : "text-destructive"}`}>
-                  {netBalance < 0 ? "−" : ""}{currencyFormatter.format(Math.abs(netBalance))}
+                <p
+                  className={`text-2xl font-bold tabular-nums tracking-tight ${netBalance >= 0 ? "text-foreground" : "text-destructive"}`}
+                >
+                  {netBalance < 0 ? "−" : ""}
+                  {currencyFormatter.format(Math.abs(netBalance))}
                 </p>
                 {netBalance !== 0 && (
                   <span className="text-xs font-medium text-muted-foreground">
@@ -227,7 +282,9 @@ export default function ExpensePage() {
 
         {summaryQuery.isError && (
           <p className="mb-8 text-sm text-destructive">
-            {summaryQuery.error instanceof Error ? summaryQuery.error.message : "Gagal memuat ringkasan"}
+            {summaryQuery.error instanceof Error
+              ? summaryQuery.error.message
+              : "Gagal memuat ringkasan"}
           </p>
         )}
 
@@ -247,7 +304,10 @@ export default function ExpensePage() {
             {searchInput && (
               <button
                 type="button"
-                onClick={() => { setSearchInput(""); handleImmediateSearchClear(); }}
+                onClick={() => {
+                  setSearchInput("");
+                  handleImmediateSearchClear();
+                }}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4 w-4" />
@@ -285,7 +345,9 @@ export default function ExpensePage() {
           <div className="mb-5 rounded-2xl bg-muted/15 p-4">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tipe</label>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Tipe
+                </label>
                 <div className="flex h-9 rounded-lg bg-muted/30 p-0.5 overflow-hidden">
                   {(["all", "income", "expense"] as const).map((val) => (
                     <button
@@ -305,7 +367,9 @@ export default function ExpensePage() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kategori</label>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Kategori
+                </label>
                 <input
                   value={categoryInput}
                   onChange={(e) => {
@@ -318,7 +382,9 @@ export default function ExpensePage() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Dari</label>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Dari
+                </label>
                 <input
                   type="date"
                   value={dateFromFilter}
@@ -328,7 +394,9 @@ export default function ExpensePage() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sampai</label>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Sampai
+                </label>
                 <input
                   type="date"
                   value={dateToFilter}
@@ -338,10 +406,17 @@ export default function ExpensePage() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Urutkan</label>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Urutkan
+                </label>
                 <select
                   value={sortBy}
-                  onChange={(e) => handleSortByChange(e.target.value as any)}
+                  onChange={(e) =>
+                    handleSortByChange(
+                      e.target.value as
+                        "created_at" | "transaction_date" | "amount",
+                    )
+                  }
                   className="h-9 w-full rounded-lg bg-muted/30 px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring/30 transition-all"
                 >
                   <option value="created_at">Dibuat</option>
@@ -351,10 +426,14 @@ export default function ExpensePage() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Arah</label>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Arah
+                </label>
                 <select
                   value={sortOrder}
-                  onChange={(e) => handleSortOrderChange(e.target.value as any)}
+                  onChange={(e) =>
+                    handleSortOrderChange(e.target.value as "asc" | "desc")
+                  }
                   className="h-9 w-full rounded-lg bg-muted/30 px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring/30 transition-all"
                 >
                   <option value="desc">Terbaru</option>
@@ -364,7 +443,9 @@ export default function ExpensePage() {
             </div>
 
             {isDateRangeInvalid && (
-              <p className="mt-2 text-xs text-destructive">Rentang tanggal tidak valid.</p>
+              <p className="mt-2 text-xs text-destructive">
+                Rentang tanggal tidak valid.
+              </p>
             )}
 
             {hasActiveFilters && (
@@ -397,7 +478,7 @@ export default function ExpensePage() {
 
       {/* ── Form Overlay ── */}
       {showForm && (
-        <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center" onClick={() => setShowForm(false)}>
+        <Modal title="Tambah Transaksi" onClose={() => setShowForm(false)}>
           <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" />
 
           <div
@@ -407,8 +488,14 @@ export default function ExpensePage() {
             <div className="sticky top-0 bg-background pt-3 pb-2 px-6 border-b border-border/50 rounded-t-3xl sm:rounded-t-2xl z-10">
               <div className="w-10 h-1 bg-border rounded-full mx-auto mb-3 sm:hidden" />
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold text-foreground">Tambah Transaksi</h2>
-                <button onClick={() => setShowForm(false)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                <h2 className="text-base font-semibold text-foreground">
+                  Tambah Transaksi
+                </h2>
+                <button
+                  onClick={() => setShowForm(false)}
+                  aria-label="Tutup dialog"
+                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -418,7 +505,7 @@ export default function ExpensePage() {
               <ExpenseForm compact onSuccess={() => setShowForm(false)} />
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </>
   );

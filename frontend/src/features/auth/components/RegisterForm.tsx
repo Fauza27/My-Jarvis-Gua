@@ -7,7 +7,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { register as registerUser } from "../api/authApi";
 import { mapServerError } from "../utils";
-import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, UserPlus, Mail, Lock, Check, X } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  Loader2,
+  UserPlus,
+  Mail,
+  Lock,
+  Check,
+  X,
+} from "lucide-react";
 
 type FormState = "idle" | "loading" | "error" | "success";
 
@@ -17,7 +28,10 @@ function getPasswordRequirements(password: string) {
     { label: "At least one uppercase letter", met: /[A-Z]/.test(password) },
     { label: "At least one lowercase letter", met: /[a-z]/.test(password) },
     { label: "At least one number", met: /\d/.test(password) },
-    { label: "At least one special character", met: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
+    {
+      label: "At least one special character",
+      met: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    },
   ];
 }
 
@@ -55,15 +69,27 @@ function PasswordStrengthBar({ password }: { password: string }) {
               ${strength >= level ? config.color : "bg-muted"}`}
           />
         ))}
-        <span className={`text-[10px] ml-1.5 font-medium ${strength === 1 ? "text-destructive" : strength === 2 || strength === 3 ? "text-warning" : strength >= 4 ? "text-success" : "text-muted-foreground"}`}>{config.label}</span>
+        <span
+          className={`text-[10px] ml-1.5 font-medium ${strength === 1 ? "text-destructive" : strength === 2 || strength === 3 ? "text-warning" : strength >= 4 ? "text-success" : "text-muted-foreground"}`}
+        >
+          {config.label}
+        </span>
       </div>
 
       {/* Checklist requirements - ultra compact */}
       <ul className="space-y-0">
         {requirements.map((req) => (
           <li key={req.label} className="flex items-center gap-1 text-[10px]">
-            {req.met ? <Check className="w-2.5 h-2.5 text-success shrink-0" /> : <X className="w-2.5 h-2.5 text-muted-foreground shrink-0" />}
-            <span className={req.met ? "text-success" : "text-muted-foreground"}>{req.label}</span>
+            {req.met ? (
+              <Check className="w-2.5 h-2.5 text-success shrink-0" />
+            ) : (
+              <X className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
+            )}
+            <span
+              className={req.met ? "text-success" : "text-muted-foreground"}
+            >
+              {req.label}
+            </span>
           </li>
         ))}
       </ul>
@@ -109,7 +135,10 @@ export function RegisterForm() {
       router.push("/login");
     } catch (error) {
       setFormState("error");
-      const errorMessage = error instanceof Error ? mapServerError(error.message) : "An unexpected error occurred. Please try again.";
+      const errorMessage =
+        error instanceof Error
+          ? mapServerError(error.message)
+          : "An unexpected error occurred. Please try again.";
       setServerError(errorMessage);
       setFormState("idle");
     }
@@ -120,7 +149,11 @@ export function RegisterForm() {
   const isDisabled = isLoading || isSuccess;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5 bg-card text-card-foreground">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+      className="space-y-5 bg-card text-card-foreground"
+    >
       {serverError && (
         <div
           role="alert"
@@ -154,12 +187,18 @@ export function RegisterForm() {
 
       {/* Email Field */}
       <div className="space-y-1.5">
-        <label htmlFor="email" className="block text-sm font-medium text-foreground">
+        <label
+          htmlFor="email"
+          className="block text-sm font-medium text-foreground"
+        >
           Email
         </label>
 
         <div className="relative">
-          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+          <Mail
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
+            aria-hidden="true"
+          />
           <input
             {...register("email")}
             id="email"
@@ -181,7 +220,11 @@ export function RegisterForm() {
         </div>
 
         {errors.email && (
-          <p id="email-error" role="alert" className="flex items-center gap-1.5 text-xs text-destructive mt-1">
+          <p
+            id="email-error"
+            role="alert"
+            className="flex items-center gap-1.5 text-xs text-destructive mt-1"
+          >
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             {errors.email.message}
           </p>
@@ -190,11 +233,17 @@ export function RegisterForm() {
 
       {/* Password Field */}
       <div className="space-y-1.5">
-        <label htmlFor="password" className="block text-sm font-medium text-foreground">
+        <label
+          htmlFor="password"
+          className="block text-sm font-medium text-foreground"
+        >
           Password
         </label>
         <div className="relative">
-          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+          <Lock
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
+            aria-hidden="true"
+          />
           <input
             {...register("password")}
             id="password"
@@ -203,7 +252,9 @@ export function RegisterForm() {
             placeholder="Create a strong password"
             disabled={isDisabled}
             aria-invalid={!!errors.password}
-            aria-describedby={errors.password ? "password-error" : "password-strength"}
+            aria-describedby={
+              errors.password ? "password-error" : "password-strength"
+            }
             className={`
               w-full h-11 pl-10 pr-11 rounded-lg border text-sm
               text-foreground placeholder:text-muted-foreground
@@ -227,12 +278,20 @@ export function RegisterForm() {
               transition-colors duration-150
             "
           >
-            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {showPassword ? (
+              <EyeOff className="w-4 h-4" />
+            ) : (
+              <Eye className="w-4 h-4" />
+            )}
           </button>
         </div>
 
         {errors.password && (
-          <p id="password-error" role="alert" className="flex items-center gap-1.5 text-xs text-destructive mt-1">
+          <p
+            id="password-error"
+            role="alert"
+            className="flex items-center gap-1.5 text-xs text-destructive mt-1"
+          >
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             {errors.password.message}
           </p>
@@ -248,11 +307,17 @@ export function RegisterForm() {
 
       {/* Confirm Password Field */}
       <div className="space-y-1.5">
-        <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground">
+        <label
+          htmlFor="confirmPassword"
+          className="block text-sm font-medium text-foreground"
+        >
           Confirm Password
         </label>
         <div className="relative">
-          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+          <Lock
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
+            aria-hidden="true"
+          />
           <input
             {...register("confirmPassword")}
             id="confirmPassword"
@@ -261,7 +326,9 @@ export function RegisterForm() {
             placeholder="Confirm your password"
             disabled={isDisabled}
             aria-invalid={!!errors.confirmPassword}
-            aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
+            aria-describedby={
+              errors.confirmPassword ? "confirmPassword-error" : undefined
+            }
             className={`
               w-full h-11 pl-10 pr-11 rounded-lg border text-sm
               text-foreground placeholder:text-muted-foreground
@@ -273,7 +340,11 @@ export function RegisterForm() {
           />
         </div>
         {errors.confirmPassword && (
-          <p id="confirmPassword-error" role="alert" className="flex items-center gap-1.5 text-xs text-destructive mt-1">
+          <p
+            id="confirmPassword-error"
+            role="alert"
+            className="flex items-center gap-1.5 text-xs text-destructive mt-1"
+          >
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             {errors.confirmPassword.message}
           </p>

@@ -10,9 +10,9 @@ export interface Profile {
 }
 
 export interface UpdateProfileInput {
-  display_name?: string;
-  bio?: string;
-  avatar_url?: string;
+  display_name?: string | null;
+  bio?: string | null;
+  avatar_url?: string | null;
 }
 
 export interface GenerateConnectCodeResponse {

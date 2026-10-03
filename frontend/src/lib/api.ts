@@ -1,6 +1,7 @@
 import { cache } from "react";
 
-const BASE_URL = typeof window === "undefined" ? process.env.NEXT_PUBLIC_API_URL : "";
+const BASE_URL =
+  typeof window === "undefined" ? process.env.NEXT_PUBLIC_API_URL : "";
 
 type HomeResponse = {
   message: string;

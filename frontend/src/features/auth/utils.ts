@@ -10,7 +10,12 @@ export function getTokenExpiryTime(expiresAt: number): Date {
 export function mapServerError(message: string): string {
   const lowerMsg = message.toLowerCase();
 
-  if (lowerMsg.includes("invalid") && (lowerMsg.includes("email") || lowerMsg.includes("password") || lowerMsg.includes("credentials"))) {
+  if (
+    lowerMsg.includes("invalid") &&
+    (lowerMsg.includes("email") ||
+      lowerMsg.includes("password") ||
+      lowerMsg.includes("credentials"))
+  ) {
     return "Invalid email or password. Please check your credentials and try again.";
   }
 
@@ -18,7 +23,10 @@ export function mapServerError(message: string): string {
     return "Your email address has not been confirmed. Please check your inbox for a confirmation email.";
   }
 
-  if (lowerMsg.includes("already exists") || lowerMsg.includes("already registered")) {
+  if (
+    lowerMsg.includes("already exists") ||
+    lowerMsg.includes("already registered")
+  ) {
     return "An account with this email already exists. Please login instead.";
   }
 
@@ -26,11 +34,18 @@ export function mapServerError(message: string): string {
     return "Too many attempts. Please wait a few minutes and try again.";
   }
 
-  if (lowerMsg.includes("network") || lowerMsg.includes("fetch") || lowerMsg.includes("failed to fetch")) {
+  if (
+    lowerMsg.includes("network") ||
+    lowerMsg.includes("fetch") ||
+    lowerMsg.includes("failed to fetch")
+  ) {
     return "Network error. Please check your internet connection and try again.";
   }
 
-  if (lowerMsg.includes("token") && (lowerMsg.includes("invalid") || lowerMsg.includes("expired"))) {
+  if (
+    lowerMsg.includes("token") &&
+    (lowerMsg.includes("invalid") || lowerMsg.includes("expired"))
+  ) {
     return "Your session has expired. Please login again.";
   }
 

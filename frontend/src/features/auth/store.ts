@@ -1,9 +1,17 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { AuthState, User } from "./types";
+import { getQueryClient } from "@/lib/query-client";
+import { useChatStore } from "@/features/chat/store";
 
 interface AuthActions {
-  setAuth: (accessToken: string, refreshToken: string, expiresAt: number, user: User) => void;
+  sessionVersion: number;
+  setAuth: (
+    accessToken: string,
+    refreshToken: string,
+    expiresAt: number,
+    user: User,
+  ) => void;
   clearAuth: () => void;
   markHydrated: () => void;
   setUser: (user: User) => void;
@@ -27,10 +35,15 @@ export const useAuthStore = create<AuthState & AuthActions>()(
   persist(
     (set, get) => ({
       ...initialState,
+      sessionVersion: 0,
 
       setAuth: (accessToken, refreshToken, expiresAt, user) => {
         const timestamp = Date.now();
         const state = get();
+        if (state.user?.id !== user.id) {
+          getQueryClient().clear();
+          useChatStore.getState().clearConversation();
+        }
 
         if (state.lastUpdate && timestamp < state.lastUpdate) {
           console.warn("Ignoring stale auth update");
@@ -55,11 +68,18 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           isAuthenticated: true,
           hasHydrated: true,
           lastUpdate: timestamp,
+          sessionVersion: state.sessionVersion + 1,
         });
       },
 
       clearAuth: () => {
-        set({ ...initialState, hasHydrated: true });
+        getQueryClient().clear();
+        useChatStore.getState().clearConversation();
+        set({
+          ...initialState,
+          hasHydrated: true,
+          sessionVersion: get().sessionVersion + 1,
+        });
       },
 
       markHydrated: () => set({ hasHydrated: true }),
@@ -91,13 +111,12 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         lastUpdate: state.lastUpdate,
       }),
       onRehydrateStorage: () => (state) => {
-        state?.markHydrated();
-        if (state?.expiresAt && state.isAuthenticated) {
-          const currentTime = Math.floor(Date.now() / 1000);
-          if (state.expiresAt <= currentTime) {
-            state.clearAuth();
-          }
+        try {
+          localStorage.removeItem("chat-storage");
+        } catch {
+          /* Storage may be disabled by the browser. */
         }
+        state?.markHydrated();
       },
     },
   ),

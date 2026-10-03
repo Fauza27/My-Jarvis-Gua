@@ -1,7 +1,13 @@
-import { LoginResponse, RegisterResponse, ForgotPasswordResponse } from "../types";
+import {
+  LoginResponse,
+  RegisterResponse,
+  ForgotPasswordResponse,
+} from "../types";
 import { useAuthStore } from "../store";
+import { getDeviceTimezone } from "@/lib/device-time";
 
-const BASE_URL = typeof window === "undefined" ? process.env.NEXT_PUBLIC_API_URL : "";
+const BASE_URL =
+  typeof window === "undefined" ? process.env.NEXT_PUBLIC_API_URL : "";
 
 if (typeof window === "undefined" && !BASE_URL) {
   throw new Error("NEXT_PUBLIC_API_URL environment variable is not defined");
@@ -9,42 +15,61 @@ if (typeof window === "undefined" && !BASE_URL) {
 
 import { fetchWithTimeout } from "@/lib/fetch";
 
-// Helper to get valid token (with auto-refresh)
-export const getValidToken = async (): Promise<string> => {
-  const { accessToken, refreshToken: refresh, isTokenExpiringSoon, setAuth, clearAuth } = useAuthStore.getState();
+let refreshInFlight: Promise<LoginResponse> | null = null;
+let tokenInFlight: Promise<string> | null = null;
 
-  // Check if token is expiring soon
-  if (isTokenExpiringSoon() && refresh) {
+// Production authenticates using HttpOnly cookies; an empty bearer token is valid.
+export const getValidToken = async (forceRefresh = false): Promise<string> => {
+  if (!tokenInFlight) {
+    tokenInFlight = resolveValidToken(forceRefresh).finally(() => {
+      tokenInFlight = null;
+    });
+  }
+  return tokenInFlight;
+};
+
+async function resolveValidToken(forceRefresh: boolean): Promise<string> {
+  const state = useAuthStore.getState();
+  if (forceRefresh || !state.isAuthenticated || state.isTokenExpiringSoon()) {
+    const sessionVersion = state.sessionVersion;
     try {
-      console.log("Token expiring soon, refreshing...");
-      const response = await refreshToken(refresh);
-
-      // Update store with new tokens
-      setAuth(response.access_token, response.refresh_token, response.expires_at, response.user);
-
+      const response = await refreshToken(state.refreshToken || undefined);
+      // A response from a previous session must not resurrect it after logout.
+      if (useAuthStore.getState().sessionVersion !== sessionVersion) {
+        throw new Error("Authentication session changed");
+      }
+      state.setAuth(
+        response.access_token,
+        response.refresh_token,
+        response.expires_at,
+        response.user,
+      );
       return response.access_token;
     } catch (error) {
-      console.error("Token refresh failed:", error);
-      // Clear auth and redirect to login
-      clearAuth();
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
+      if (
+        error instanceof SessionExpiredError &&
+        useAuthStore.getState().sessionVersion === sessionVersion
+      ) {
+        state.clearAuth();
       }
       throw error;
     }
   }
 
-  return accessToken || "";
-};
+  return state.accessToken || "";
+}
 
-export const login = async (email: string, password: string): Promise<LoginResponse> => {
+export const login = async (
+  email: string,
+  password: string,
+): Promise<LoginResponse> => {
   const res = await fetchWithTimeout(`${BASE_URL}/api/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     credentials: "include",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, timezone: getDeviceTimezone() }),
   });
 
   if (!res.ok) {
@@ -55,7 +80,10 @@ export const login = async (email: string, password: string): Promise<LoginRespo
   return res.json();
 };
 
-export const register = async (email: string, password: string): Promise<RegisterResponse> => {
+export const register = async (
+  email: string,
+  password: string,
+): Promise<RegisterResponse> => {
   const res = await fetchWithTimeout(`${BASE_URL}/api/auth/register`, {
     method: "POST",
     headers: {
@@ -66,14 +94,18 @@ export const register = async (email: string, password: string): Promise<Registe
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: "Registration failed" }));
+    const error = await res
+      .json()
+      .catch(() => ({ detail: "Registration failed" }));
     throw new Error(error.detail || "Registration failed");
   }
 
   return res.json();
 };
 
-export const forgotPassword = async (email: string): Promise<ForgotPasswordResponse> => {
+export const forgotPassword = async (
+  email: string,
+): Promise<ForgotPasswordResponse> => {
   const res = await fetchWithTimeout(`${BASE_URL}/api/auth/forgot-password`, {
     method: "POST",
     headers: {
@@ -92,7 +124,9 @@ export const forgotPassword = async (email: string): Promise<ForgotPasswordRespo
 };
 
 export const logout = async (token?: string): Promise<void> => {
-  const resolvedToken = token || (await getValidToken());
+  // Finish refresh first so its Set-Cookie cannot arrive after cookie deletion.
+  if (refreshInFlight) await refreshInFlight.catch(() => undefined);
+  const resolvedToken = token || useAuthStore.getState().accessToken;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
@@ -110,7 +144,12 @@ export const logout = async (token?: string): Promise<void> => {
     const error = await res.json().catch(() => ({ detail: "Logout failed" }));
     const detail = String(error.detail || "").toLowerCase();
 
-    if (res.status === 401 && (detail.includes("invalid") || detail.includes("expired") || detail.includes("token"))) {
+    if (
+      res.status === 401 &&
+      (detail.includes("invalid") ||
+        detail.includes("expired") ||
+        detail.includes("token"))
+    ) {
       return;
     }
 
@@ -118,23 +157,41 @@ export const logout = async (token?: string): Promise<void> => {
   }
 };
 
-export const refreshToken = async (refreshToken: string): Promise<LoginResponse> => {
+class SessionExpiredError extends Error {}
+
+export const refreshToken = (token?: string): Promise<LoginResponse> => {
+  if (!refreshInFlight) {
+    refreshInFlight = requestRefresh(token).finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+};
+
+async function requestRefresh(token?: string): Promise<LoginResponse> {
   const res = await fetchWithTimeout(`${BASE_URL}/api/auth/refresh`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     credentials: "include",
-    body: JSON.stringify({ refresh_token: refreshToken }),
+    body: JSON.stringify({
+      refresh_token: token,
+      timezone: getDeviceTimezone(),
+    }),
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: "Token refresh failed" }));
+    const error = await res
+      .json()
+      .catch(() => ({ detail: "Token refresh failed" }));
+    if (res.status === 401)
+      throw new SessionExpiredError(error.detail || "Session expired");
     throw new Error(error.detail || "Token refresh failed");
   }
 
   return res.json();
-};
+}
 
 export const verifyToken = async (token?: string) => {
   const resolvedToken = token || (await getValidToken());
@@ -156,18 +213,24 @@ export const verifyToken = async (token?: string) => {
   return res.json();
 };
 
-export const syncSessionCookies = async (payload: { access_token: string; refresh_token: string; expires_at: number }): Promise<void> => {
+export const syncSessionCookies = async (payload: {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
+}): Promise<void> => {
   const res = await fetchWithTimeout(`${BASE_URL}/api/auth/session`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     credentials: "include",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, timezone: getDeviceTimezone() }),
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: "Session sync failed" }));
+    const error = await res
+      .json()
+      .catch(() => ({ detail: "Session sync failed" }));
     throw new Error(error.detail || "Session sync failed");
   }
 };

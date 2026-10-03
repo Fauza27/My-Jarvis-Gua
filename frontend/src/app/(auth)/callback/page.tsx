@@ -10,7 +10,10 @@ import { syncSessionCookies } from "@/features/auth/api/authApi";
 
 const AUTH_TIMEOUT_MS = 15000;
 
-function withTimeout<T>(promise: Promise<T>, timeoutMessage: string): Promise<T> {
+function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMessage: string,
+): Promise<T> {
   return new Promise((resolve, reject) => {
     const timeoutId = setTimeout(() => {
       reject(new Error(timeoutMessage));
@@ -54,28 +57,36 @@ export default function AuthCallbackPage() {
 
     const handleCallback = async () => {
       try {
-        const persistSession = async (session: NonNullable<Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]>) => {
+        const persistSession = async (
+          session: NonNullable<
+            Awaited<
+              ReturnType<typeof supabase.auth.getSession>
+            >["data"]["session"]
+          >,
+        ) => {
           if (!session.expires_at) {
-            failAuth("Authentication session is invalid. Please sign in again.");
+            failAuth(
+              "Authentication session is invalid. Please sign in again.",
+            );
             return false;
           }
 
-          setAuth(session.access_token, session.refresh_token ?? "", session.expires_at, {
-            id: session.user.id,
-            email: session.user.email ?? "",
-            created_at: session.user.created_at,
-            email_confirmed: session.user.email_confirmed_at != null,
+          await syncSessionCookies({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token ?? "",
+            expires_at: session.expires_at,
           });
-
-          try {
-            await syncSessionCookies({
-              access_token: session.access_token,
-              refresh_token: session.refresh_token ?? "",
-              expires_at: session.expires_at,
-            });
-          } catch (err) {
-            console.error("Session cookie sync failed:", err);
-          }
+          setAuth(
+            session.access_token,
+            session.refresh_token ?? "",
+            session.expires_at,
+            {
+              id: session.user.id,
+              email: session.user.email ?? "",
+              created_at: session.user.created_at,
+              email_confirmed: session.user.email_confirmed_at != null,
+            },
+          );
 
           if (isMounted) {
             router.replace("/dashboard");
@@ -85,7 +96,10 @@ export default function AuthCallbackPage() {
         };
 
         const readCurrentSession = async () => {
-          const { data, error: sessionError } = await withTimeout(supabase.auth.getSession(), "Authentication timeout. Please try signing in again.");
+          const { data, error: sessionError } = await withTimeout(
+            supabase.auth.getSession(),
+            "Authentication timeout. Please try signing in again.",
+          );
 
           if (sessionError) {
             throw sessionError;
@@ -95,7 +109,8 @@ export default function AuthCallbackPage() {
         };
 
         const searchParams = new URLSearchParams(window.location.search);
-        const authError = searchParams.get("error_description") ?? searchParams.get("error");
+        const authError =
+          searchParams.get("error_description") ?? searchParams.get("error");
 
         if (authError) {
           failAuth(`Authentication failed: ${authError}`);
@@ -105,30 +120,41 @@ export default function AuthCallbackPage() {
         const code = searchParams.get("code");
 
         const existingSession = await readCurrentSession();
-        if (existingSession && await persistSession(existingSession)) {
+        if (existingSession && (await persistSession(existingSession))) {
           return;
         }
 
         if (!code) {
-          failAuth("Authentication code is missing. Please try signing in again.");
+          failAuth(
+            "Authentication code is missing. Please try signing in again.",
+          );
           return;
         }
 
-        const { data, error: exchangeError } = await withTimeout(supabase.auth.exchangeCodeForSession(code), "Authentication timeout. Please try signing in again.");
+        const { data, error: exchangeError } = await withTimeout(
+          supabase.auth.exchangeCodeForSession(code),
+          "Authentication timeout. Please try signing in again.",
+        );
 
         if (exchangeError || !data.session) {
           const recoveredSession = await readCurrentSession();
-          if (recoveredSession && await persistSession(recoveredSession)) {
+          if (recoveredSession && (await persistSession(recoveredSession))) {
             return;
           }
 
-          failAuth(exchangeError?.message ?? "Unable to complete authentication.");
+          failAuth(
+            exchangeError?.message ?? "Unable to complete authentication.",
+          );
           return;
         }
 
         await persistSession(data.session);
       } catch (err) {
-        failAuth(err instanceof Error ? err.message : "Unexpected authentication error. Please try again.");
+        failAuth(
+          err instanceof Error
+            ? err.message
+            : "Unexpected authentication error. Please try again.",
+        );
       }
     };
 
@@ -143,21 +169,35 @@ export default function AuthCallbackPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md bg-card rounded-lg p-8 text-center">
         <div className="inline-flex items-center justify-center mb-4">
-          <Image src="/Login-Head.png" alt="My Jarvis Gua Logo" width={64} height={64} className="rounded-xl" />
+          <Image
+            src="/optimized/Login-Head.webp"
+            alt="My Jarvis Gua Logo"
+            width={64}
+            height={64}
+            className="rounded-xl"
+          />
         </div>
 
         {error ? (
           <>
             <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
-            <h1 className="text-2xl font-bold text-foreground mb-2">Authentication Failed</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              Authentication Failed
+            </h1>
             <p className="text-muted-foreground mb-4">{error}</p>
-            <p className="text-sm text-muted-foreground">Redirecting to login...</p>
+            <p className="text-sm text-muted-foreground">
+              Redirecting to login...
+            </p>
           </>
         ) : (
           <>
             <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-primary" />
-            <h1 className="text-2xl font-bold text-foreground mb-2">Completing Sign In</h1>
-            <p className="text-muted-foreground">Please wait while we set up your account...</p>
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              Completing Sign In
+            </h1>
+            <p className="text-muted-foreground">
+              Please wait while we set up your account...
+            </p>
           </>
         )}
       </div>

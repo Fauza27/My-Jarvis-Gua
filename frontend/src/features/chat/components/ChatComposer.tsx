@@ -10,7 +10,12 @@ interface ChatComposerProps {
   disabled?: boolean;
 }
 
-export function ChatComposer({ value, onChange, onSubmit, disabled = false }: ChatComposerProps) {
+export function ChatComposer({
+  value,
+  onChange,
+  onSubmit,
+  disabled = false,
+}: ChatComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -35,7 +40,10 @@ export function ChatComposer({ value, onChange, onSubmit, disabled = false }: Ch
   }, [value]);
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-border/40 bg-background/95 p-3 backdrop-blur supports-backdrop-filter:bg-background/85 md:border-t-0 md:p-4 md:pt-2">
+    <form
+      onSubmit={handleSubmit}
+      className="border-t border-border/40 bg-background/95 p-3 backdrop-blur supports-backdrop-filter:bg-background/85 md:border-t-0 md:p-4 md:pt-2"
+    >
       <div className="mx-auto flex w-full items-end gap-2 rounded-2xl border border-border/60 bg-card/80 p-2 shadow-sm transition-all duration-200 focus-within:border-border focus-within:shadow-md">
         <textarea
           ref={textareaRef}

@@ -8,9 +8,15 @@ export function useLogin() {
   const setAuth = useAuthStore((state) => state.setAuth);
 
   return useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) => login(email, password),
+    mutationFn: ({ email, password }: { email: string; password: string }) =>
+      login(email, password),
     onSuccess: (data) => {
-      setAuth(data.access_token, data.refresh_token, data.expires_at, data.user);
+      setAuth(
+        data.access_token,
+        data.refresh_token,
+        data.expires_at,
+        data.user,
+      );
       router.push("/dashboard");
     },
   });

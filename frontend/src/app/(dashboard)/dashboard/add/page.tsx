@@ -5,6 +5,7 @@ import { ArrowLeft, X, Construction } from "lucide-react";
 import { ExpenseForm } from "@/features/expense/components/ExpenseForm";
 import Link from "next/link";
 import Image from "next/image";
+import { Modal } from "@/components/Modal";
 
 type AddOption = {
   id: string;
@@ -19,54 +20,62 @@ const addOptions: AddOption[] = [
     id: "expense",
     title: "Transaksi Keuangan",
     description: "Catat pemasukan atau pengeluaran",
-    iconImage: "/Logo-Finance-Tracker-HeadVersion(small).png",
+    iconImage: "/optimized/Logo-Finance-Tracker-HeadVersion(small).webp",
     available: true,
   },
   {
     id: "task",
     title: "Tugas",
     description: "Tambah to-do list atau tugas",
-    iconImage: "/Logo-Finance-Tracker-HeadVersion(small).png",
+    iconImage: "/optimized/Logo-Finance-Tracker-HeadVersion(small).webp",
     available: false,
   },
   {
     id: "nutrition",
     title: "Catatan Makanan",
     description: "Catat makanan & nutrisi harian",
-    iconImage: "/Logo-Finance-Tracker-HeadVersion(small).png",
+    iconImage: "/optimized/Logo-Finance-Tracker-HeadVersion(small).webp",
     available: false,
   },
   {
     id: "fitness",
     title: "Aktivitas Olahraga",
     description: "Log workout & aktivitas fisik",
-    iconImage: "/Logo-Finance-Tracker-HeadVersion(small).png",
+    iconImage: "/optimized/Logo-Finance-Tracker-HeadVersion(small).webp",
     available: false,
   },
   {
     id: "journal",
     title: "Jurnal Harian",
     description: "Tulis catatan & refleksi harian",
-    iconImage: "/Logo-Finance-Tracker-HeadVersion(small).png",
+    iconImage: "/optimized/Logo-Finance-Tracker-HeadVersion(small).webp",
     available: false,
   },
   {
     id: "goal",
     title: "Target / Goals",
     description: "Set target baru & milestone",
-    iconImage: "/Logo-Finance-Tracker-HeadVersion(small).png",
+    iconImage: "/optimized/Logo-Finance-Tracker-HeadVersion(small).webp",
     available: false,
   },
 ];
 
 // ── Coming Soon Placeholder Form ──
-function ComingSoonForm({ option, onClose }: { option: AddOption; onClose: () => void }) {
+function ComingSoonForm({
+  option,
+  onClose,
+}: {
+  option: AddOption;
+  onClose: () => void;
+}) {
   return (
     <div className="flex flex-col items-center text-center py-8">
       <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
         <Construction className="w-8 h-8 text-primary" />
       </div>
-      <h3 className="text-lg font-semibold text-foreground mb-1">Coming Soon</h3>
+      <h3 className="text-lg font-semibold text-foreground mb-1">
+        Coming Soon
+      </h3>
       <p className="text-sm text-muted-foreground max-w-xs">
         Fitur <strong>{option.title}</strong> sedang dalam pengembangan.
         <br />
@@ -97,9 +106,14 @@ export default function AddPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground">Tambah Data</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Pilih jenis data yang ingin kamu tambahkan.</p>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Pilih jenis data yang ingin kamu tambahkan.
+            </p>
           </div>
-          <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors"
+          >
             <ArrowLeft className="w-4 h-4" />
             Kembali
           </Link>
@@ -121,14 +135,28 @@ export default function AddPage() {
               >
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 shrink-0">
-                    <Image src={option.iconImage} alt={`${option.title} icon`} width={40} height={40} className="object-contain" />
+                    <Image
+                      src={option.iconImage}
+                      alt={`${option.title} icon`}
+                      width={40}
+                      height={40}
+                      className="object-contain"
+                    />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-card-foreground">{option.title}</h3>
-                      {!option.available && <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">Soon</span>}
+                      <h3 className="text-sm font-semibold text-card-foreground">
+                        {option.title}
+                      </h3>
+                      {!option.available && (
+                        <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">
+                          Soon
+                        </span>
+                      )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{option.description}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {option.description}
+                    </p>
                   </div>
                 </div>
               </button>
@@ -139,7 +167,10 @@ export default function AddPage() {
 
       {/* ── Form Overlay ── */}
       {selectedOption && (
-        <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center" onClick={() => setSelectedOption(null)}>
+        <Modal
+          title={selectedOption.title}
+          onClose={() => setSelectedOption(null)}
+        >
           {/* Backdrop */}
           <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" />
 
@@ -160,11 +191,23 @@ export default function AddPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 flex items-center justify-center">
-                    <Image src={selectedOption.iconImage} alt={`${selectedOption.title} icon`} width={32} height={32} className="object-contain" />
+                    <Image
+                      src={selectedOption.iconImage}
+                      alt={`${selectedOption.title} icon`}
+                      width={32}
+                      height={32}
+                      className="object-contain"
+                    />
                   </div>
-                  <h2 className="text-base font-semibold text-foreground">{selectedOption.title}</h2>
+                  <h2 className="text-base font-semibold text-foreground">
+                    {selectedOption.title}
+                  </h2>
                 </div>
-                <button onClick={() => setSelectedOption(null)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                <button
+                  onClick={() => setSelectedOption(null)}
+                  aria-label="Tutup dialog"
+                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -172,10 +215,20 @@ export default function AddPage() {
 
             {/* Form Content */}
             <div className="p-6 pt-4">
-              {selectedOption.available && selectedOption.id === "expense" ? <ExpenseForm compact onSuccess={() => setSelectedOption(null)} /> : <ComingSoonForm option={selectedOption} onClose={() => setSelectedOption(null)} />}
+              {selectedOption.available && selectedOption.id === "expense" ? (
+                <ExpenseForm
+                  compact
+                  onSuccess={() => setSelectedOption(null)}
+                />
+              ) : (
+                <ComingSoonForm
+                  option={selectedOption}
+                  onClose={() => setSelectedOption(null)}
+                />
+              )}
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </>
   );
