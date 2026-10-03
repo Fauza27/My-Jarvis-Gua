@@ -1,20 +1,2 @@
-# ── Test Framework ────────────────────────────────────────────────
-pytest==8.3.0               # Framework testing utama
-pytest-asyncio==0.23.8      # Support untuk async/await di test
-pytest-mock==3.14.0         # Shortcut untuk unittest.mock yang lebih enak
-pytest-cov==5.0.0           # Code coverage reporting
-
-# ── HTTP Testing ──────────────────────────────────────────────────
-httpx==0.27.0               # HTTP client yang dipakai FastAPI TestClient
-# FastAPI's TestClient sudah include httpx di dalamnya
-
-# ── Load/Performance Testing ──────────────────────────────────────
-locust==2.31.0              # Load testing tool
-pytest-benchmark==4.0.0     # Micro-benchmarking untuk fungsi Python
-
-# ── Test Utilities ────────────────────────────────────────────────
-faker==26.0.0               # Generate data palsu (email, nama, dll)
-freezegun==1.5.1            # "Freeze" waktu untuk test yang bergantung timestamp
-
-# ── Security Testing ──────────────────────────────────────────────
-bandit==1.7.9               # Static security linter untuk Python
+# Single source of truth for test tooling.
+-r ../requirements-dev.txt

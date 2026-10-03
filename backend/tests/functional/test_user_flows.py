@@ -29,7 +29,7 @@ class TestUserOnboardingFlow:
     """
     Skenario:
     User baru Budi mendaftar dan login.
-    
+
     Alur:
     1. Budi daftar dengan email dan password
     2. Budi login dan mendapat token
@@ -42,7 +42,7 @@ class TestUserOnboardingFlow:
         Setiap test di class ini mendapat fresh app + fresh mocks.
         """
         app = create_app()
-        
+
         # Import semua dependency factories yang akan kita override
         from app.api.auth import get_auth_service
         from app.core.dependencies import get_current_user
@@ -63,35 +63,35 @@ class TestUserOnboardingFlow:
     def test_skenario_onboarding_lengkap(self, app_with_mocks):
         """
         Test alur lengkap: daftar → login
-        
+
         Ini adalah "happy path" dari fitur autentikasi.
         Jika test ini pass, berarti fitur dasar berfungsi sebagaimana mestinya.
         """
         app, mock_auth_svc, mock_user = app_with_mocks
-        
+
         with TestClient(app) as client:
             # ── LANGKAH 1: Daftar ────────────────────────────────────────────
             mock_auth_svc.register.return_value = MessageOut(
                 message="Registration successful. Please check your email to confirm."
             )
-            
+
             resp_register = client.post("/api/auth/register", json={
                 "email": "budi@test.com",
                 "password": "Password123!",
             })
-            
+
             assert resp_register.status_code == 201, "Langkah 1: Registrasi harus 201"
             assert "successful" in resp_register.json()["message"].lower()
 
             # ── LANGKAH 2: Login ──────────────────────────────────────────────
             token = create_fake_token(email="budi@test.com", user_id="user-budi-123")
             mock_auth_svc.login.return_value = token
-            
+
             resp_login = client.post("/api/auth/login", json={
                 "email": "budi@test.com",
                 "password": "Password123!",
             })
-            
+
             assert resp_login.status_code == 200, "Langkah 2: Login harus 200"
             access_token = resp_login.json()["access_token"]
             assert access_token is not None, "Langkah 2: Harus ada access_token"
@@ -105,7 +105,7 @@ class TestSecurityBoundaryFlow:
     """
     Skenario:
     Memastikan endpoint protected hanya bisa diakses dengan token valid.
-    
+
     Ini adalah skenario yang PALING KRITIS untuk aplikasi SaaS.
     Autentikasi dan otorisasi adalah requirement wajib.
     """
@@ -116,10 +116,10 @@ class TestSecurityBoundaryFlow:
         EKSPEKTASI: Semua endpoint protected return 401.
         """
         app = create_app()
-        
+
         with TestClient(app) as client:
             protected_endpoints = [
-                ("POST", "/api/auth/logout"),
+                ("GET", "/api/auth/verify"),
             ]
 
             for method, url in protected_endpoints:
@@ -139,11 +139,11 @@ class TestSecurityBoundaryFlow:
         EKSPEKTASI: 401 Unauthorized.
         """
         app = create_app()
-        
+
         with TestClient(app) as client:
             # Format salah: tidak ada "Bearer " prefix
-            resp = client.post(
-                "/api/auth/logout",
+            resp = client.get(
+                "/api/auth/verify",
                 headers={"Authorization": "hanya-token-tanpa-bearer"},
             )
             assert resp.status_code == 401
@@ -152,15 +152,15 @@ class TestSecurityBoundaryFlow:
         """
         SKENARIO: Token ada dan formatnya benar, tapi nilainya palsu.
         EKSPEKTASI: 401 Unauthorized.
-        
+
         Ini adalah test nyata yang akan ke Supabase untuk verifikasi token.
         Di sini kita verifikasi bahwa rejection path bekerja.
         """
         app = create_app()
-        
+
         with TestClient(app) as client:
-            resp = client.post(
-                "/api/auth/logout",
+            resp = client.get(
+                "/api/auth/verify",
                 headers={"Authorization": "Bearer ini.jelas.token.palsu"},
             )
             assert resp.status_code == 401
@@ -183,7 +183,7 @@ class TestErrorRecoveryFlow:
         EKSPEKTASI: 422 dengan pesan yang menjelaskan masalahnya.
         """
         app = create_app()
-        
+
         with TestClient(app) as client:
             # Kirim string, bukan JSON object
             resp = client.post(
@@ -191,7 +191,7 @@ class TestErrorRecoveryFlow:
                 content="ini bukan json",
                 headers={"Content-Type": "application/json"},
             )
-            
+
             assert resp.status_code == 422
             assert "detail" in resp.json()
 
@@ -199,7 +199,7 @@ class TestErrorRecoveryFlow:
         """
         SKENARIO: Ada error internal di server (tidak terduga).
         EKSPEKTASI: User mendapat pesan generik, BUKAN stack trace.
-        
+
         SECURITY: Stack trace bisa mengungkapkan informasi sensitif
         tentang arsitektur internal sistem kita.
         """

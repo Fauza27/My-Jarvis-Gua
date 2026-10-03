@@ -3,7 +3,8 @@ import logging
 from supabase import Client
 from postgrest.exceptions import APIError
 
-from app.core.exceptions import NotFoundError, TelegramAlreadyLinkedError
+from app.core.exceptions import NotFoundError, TelegramAlreadyLinkedError, AuthenticationError
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -138,17 +139,22 @@ class ProfileRepository:
         )
         return response.data[0] if response.data else None
     
-    def consume_connect_code(self, user_id: str, telegram_chat_id: int) -> dict:
+    def consume_connect_code(self, user_id: str, telegram_chat_id: int, code: str) -> dict:
         """
         consume connect code by setting connect_code and connect_code_expires_at to None.
         this is called after successfully link Telegram account, to invalidate the code.
         """
         try:
-            return self.update(user_id, {
+            response = self._client.table(self.TABLE).update({
                 "telegram_chat_id": telegram_chat_id,
                 "connect_code": None,
                 "connect_code_expires_at": None
-            })
+            }).eq("id", user_id).eq("connect_code", code).gt(
+                "connect_code_expires_at", datetime.now(timezone.utc).isoformat()
+            ).execute()
+            if not response.data:
+                raise AuthenticationError("Invalid or expired connect code")
+            return response.data[0]
         except Exception as e:
             if "23505" in str(e) or "unique" in str(e).lower():
                 raise TelegramAlreadyLinkedError("This Telegram account is already linked to another profile")

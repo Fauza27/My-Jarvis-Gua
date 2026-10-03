@@ -243,17 +243,18 @@ class TestLoginEndpoint:
         finally:
             app.dependency_overrides.clear()
 
-    def test_login_content_type_harus_json(self, client):
+    def test_login_content_type_harus_json(self, client, monkeypatch):
         """
         SKENARIO: Login berhasil.
         EKSPEKTASI: Response Content-Type adalah application/json.
         """
+        monkeypatch.setattr("app.services.auth_service.AuthService.login", lambda *args, **kwargs: make_token_out())
         response = client.post("/api/auth/login", json={
             "email": "budi@test.com",
             "password": "Password123",
         })
 
-        # Meski status code 401 (karena tidak ada mock), Content-Type harus JSON
+        assert response.status_code == 200
         assert "application/json" in response.headers.get("content-type", "")
 
 

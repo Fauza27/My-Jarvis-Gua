@@ -16,13 +16,15 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: str
     SUPABASE_JWT_SECRET: str  # JWT secret for token verification
 
-    SUPABASE_TEST_URL: str
-    SUPABASE_TEST_SERVICE_ROLE_KEY: str
-    SUPABASE_TEST_ANON_KEY: str
+    SUPABASE_TEST_URL: str = ""
+    SUPABASE_TEST_SERVICE_ROLE_KEY: str = ""
+    SUPABASE_TEST_ANON_KEY: str = ""
     
     @field_validator("SUPABASE_URL", "SUPABASE_TEST_URL", mode='after')
     @classmethod
-    def validate_url(cls, value: str) -> str:
+    def validate_url(cls, value: str, info: ValidationInfo) -> str:
+        if not value and info.field_name == "SUPABASE_TEST_URL":
+            return value
         if not value:
             raise ValueError("Supabase URL is required")
         if not value.startswith("https://"):
@@ -38,8 +40,8 @@ class Settings(BaseSettings):
             raise ValueError("SUPABASE_JWT_SECRET seems too short")
         return value
 
-    # Redis
-    #REDIS_URL: str
+    # Use one shared Redis instance when the API has multiple workers/replicas.
+    RATE_LIMIT_STORAGE_URI: str = "memory://"
 
     # JWT
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
@@ -55,6 +57,13 @@ class Settings(BaseSettings):
     OPENAI_CHAT_MODEL: str = "gpt-4.1-mini"
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
     OPENAI_EMBEDDING_DIMENSIONS: int = 1536
+
+    @field_validator("OPENAI_EMBEDDING_DIMENSIONS")
+    @classmethod
+    def require_schema_embedding_dimensions(cls, value: int) -> int:
+        if value != 1536:
+            raise ValueError("Embedding dimensions must match the database vector(1536) schema")
+        return value
     
     # Telegram
     TELEGRAM_BOT_TOKEN: str
@@ -72,7 +81,7 @@ class Settings(BaseSettings):
         return value
     
     # CORS
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3001"]
+    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001"]
     
     @field_validator("ALLOWED_ORIGINS", mode='after')
     @classmethod
@@ -90,12 +99,15 @@ class Settings(BaseSettings):
         return value
 
     # URL redirect
-    FRONTEND_URL: str = "http://localhost:3001"
+    FRONTEND_URL: str = "http://localhost:3000"
     
     model_config = SettingsConfigDict(
         env_file=str(Path(__file__).parent.parent.parent / ".env"),
         env_file_encoding="utf-8",
         case_sensitive=True,
+        # Shared .env may contain maintenance-only keys such as connection_string.
+        extra="ignore",
+        hide_input_in_errors=True,
     )
     
     @property

@@ -153,6 +153,8 @@ class ProfileService:
             raise AuthenticationError("Invalid or expired connect code")
         
         expires_at_str = profile.get("connect_code_expires_at")
+        if not expires_at_str:
+            raise AuthenticationError("Invalid or expired connect code")
         if expires_at_str:
             try:
                 expires_at = datetime.fromisoformat(
@@ -160,7 +162,7 @@ class ProfileService:
                 )
                 now = datetime.now(timezone.utc)
 
-                if now > expires_at:
+                if expires_at.tzinfo is None or now >= expires_at:
                     raise AuthenticationError("Invalid or expired connect code")
             except ValueError:
                 raise AuthenticationError("Invalid or expired connect code")
@@ -168,7 +170,8 @@ class ProfileService:
         # link telegram account and invalidate the code
         self._profile_repo.consume_connect_code(
             user_id=str(profile["id"]),
-            telegram_chat_id=telegram_chat_id
+            telegram_chat_id=telegram_chat_id,
+            code=normalized_code,
         )
 
         display_name = profile.get("display_name") or "User"

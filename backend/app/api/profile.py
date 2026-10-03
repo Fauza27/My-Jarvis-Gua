@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from supabase import Client
- 
+
 from app.core.dependencies import CurrentUser, AccessToken
 from app.infrastructure.supabase_client import get_user_client, get_admin_supabase_client
 from app.repositories.profile_repository import ProfileRepository
@@ -31,7 +31,7 @@ def get_profile_service_for_admin() -> ProfileService:
     status_code=status.HTTP_200_OK,
     summary="Get current user's profile",
 )
-async def get_my_profile(
+def get_my_profile(
     current_user: CurrentUser,
     service: ProfileService = Depends(get_profile_service_for_user),
 ):
@@ -44,14 +44,14 @@ async def get_my_profile(
     status_code=status.HTTP_200_OK,
     summary="Update current user's profile",
 )
-async def update_my_profile(
+def update_my_profile(
     body: UpdateProfileRequest,
     current_user: CurrentUser,
     service: ProfileService = Depends(get_profile_service_for_user),
 ):
     """
     update the profile of the currently authenticated user.
-    
+
     Body:
     ```json
     {
@@ -69,7 +69,7 @@ async def update_my_profile(
     summary="Generate Telegram connect code for linking account",
     description="Generate a unique code that can be used to link a Telegram account to the user's profile. The code is valid for 10 minutes."
 )
-async def generate_telegram_connect_code(
+def generate_telegram_connect_code(
     current_user: CurrentUser,
     service: ProfileService = Depends(get_profile_service_for_user),
 ):
@@ -97,7 +97,7 @@ async def link_telegram_account(
     status_code=status.HTTP_200_OK,
     summary="Unlink Telegram account from current user's profile"
 )
-async def unlink_telegram_account(
+def unlink_telegram_account(
     current_user: CurrentUser,
     service: ProfileService = Depends(get_profile_service_for_user),
 ):
@@ -105,4 +105,3 @@ async def unlink_telegram_account(
     unlink Telegram account from the currently authenticated user's profile.
     """
     return service.unlink_telegram(user_id=str(current_user.id))
-

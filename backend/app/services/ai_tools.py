@@ -268,12 +268,16 @@ TOOLS: list[dict] = [
 ]
 
 
+from zoneinfo import ZoneInfo
+
+
 class ToolDispatcher:
     """Dispatcher that maps tool names to their implementations."""
 
-    def __init__(self, expense_service: ExpenseService, user_id: str):
+    def __init__(self, expense_service: ExpenseService, user_id: str, timezone_name: str = "UTC"):
         self._expense_service = expense_service
         self._user_id = user_id
+        self._timezone = ZoneInfo(timezone_name)
 
     def execute(self, function_name: str, arguments: str) -> dict[str, Any]:
         """Executes the specified tool function with the given arguments."""
@@ -315,7 +319,7 @@ class ToolDispatcher:
 
     def _default_today(self) -> str:
         """Return today's date in UTC with YYYY-MM-DD format."""
-        return datetime.now(timezone.utc).date().isoformat()
+        return datetime.now(self._timezone).date().isoformat()
 
     def _strip_none(self, args: dict[str, Any]) -> dict[str, Any]:
         """Remove keys with None values — OpenAI strict mode sends null for optional fields."""
@@ -341,8 +345,8 @@ class ToolDispatcher:
         args = self._strip_none(args)
         result = self._expense_service.get_all_expenses(
             user_id=self._user_id,
-            limit=int(args.get("limit", 20)),
-            offset=int(args.get("offset", 0)),
+            limit=max(1, min(50, int(args.get("limit", 20)))),
+            offset=max(0, int(args.get("offset", 0))),
             expense_type=args.get("type"),
             category=args.get("category"),
             q=args.get("q"),

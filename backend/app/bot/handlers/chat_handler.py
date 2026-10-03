@@ -1,4 +1,6 @@
+from starlette.concurrency import run_in_threadpool
 import logging
+from app.bot.replies import send_long_reply
 
 from telegram import Update
 from telegram.constants import ChatAction, ParseMode
@@ -31,22 +33,22 @@ def _escape_md(text: str) -> str:
 def _make_ai_service(user_id: str) -> AIService:
     """
     Creates an AIService instance for the bot.
-    NOTE: We use the admin_client (service_role) here because the bot 
-    does not have a user JWT context. RLS is bypassed, so ALL database 
+    NOTE: We use the admin_client (service_role) here because the bot
+    does not have a user JWT context. RLS is bypassed, so ALL database
     queries must explicitly filter by the provided user_id.
     """
     assert user_id, "user_id is required to prevent cross-user data leakage"
     admin_client = get_admin_supabase_client()
     openai_client = get_openai_client()
-    
+
     ai_repo = AIRepository(client=admin_client)
     embedding_service = EmbeddingService(openai_client=openai_client, ai_repo=ai_repo)
-    
+
     expense_service = ExpenseService(
         expense_repo=ExpenseRepository(client=admin_client),
         embedding_service=embedding_service,
     )
-    
+
     return AIService(
         openai_client=openai_client,
         expense_service=expense_service,
@@ -102,10 +104,11 @@ async def handle_text_chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
         ai_service = _make_ai_service(user_id)
         history = _load_history(context)
-        response = ai_service.chat(
+        response = await run_in_threadpool(ai_service.chat,
             user_id=user_id,
             message=text,
             conversation_history=history,
+            timezone_name=profile.get("timezone") or "UTC",
         )
 
         _save_history(context, response.conversation_history)
@@ -114,10 +117,7 @@ async def handle_text_chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         if not reply_text:
             reply_text = "Maaf, saya belum bisa menjawab sekarang."
 
-        await update.message.reply_text(
-            f"🤖 {_escape_md(reply_text)}",
-            parse_mode=ParseMode.MARKDOWN_V2,
-        )
+        await send_long_reply(update.message, f"🤖 {reply_text}")
 
         if response.action_taken:
             logger.info("Text chat -> AI actions: %s, user=%s", response.action_taken, user_id)

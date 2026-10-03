@@ -1,3 +1,4 @@
+from starlette.concurrency import run_in_threadpool
 # =============================================================================
 # app/bot/handlers/auth_handler.py — Bot Auth Handler
 #
@@ -14,6 +15,7 @@ import logging
 from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
+from telegram.helpers import escape_markdown
 
 from app.bot import messages
 from app.bot.keyboards import main_menu_keyboard
@@ -36,7 +38,7 @@ def _make_profile_service_admin() -> ProfileService:
 async def get_linked_profile(telegram_chat_id: int) -> dict | None:
     """Return linked profile by Telegram chat ID, or None if not linked."""
     profile_repo = _make_profile_repo_admin()
-    return profile_repo.find_by_telegram_id(telegram_chat_id)
+    return await run_in_threadpool(profile_repo.find_by_telegram_id, telegram_chat_id)
 
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -49,14 +51,14 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if profile:
         await update.message.reply_text(
             messages.ALREADY_CONNECTED.format(
-                display_name=profile.get("display_name") or user.first_name
+                display_name=escape_markdown(profile.get("display_name") or user.first_name, version=2)
             ),
             parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=main_menu_keyboard(),
         )
     else:
         await update.message.reply_text(
-            messages.WELCOME.format(first_name=user.first_name),
+            messages.WELCOME.format(first_name=escape_markdown(user.first_name, version=2)),
             parse_mode=ParseMode.MARKDOWN_V2,
         )
 
@@ -69,7 +71,7 @@ async def cmd_connect(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if profile:
         await update.message.reply_text(
             messages.ALREADY_CONNECTED.format(
-                display_name=profile.get("display_name") or "kamu"
+                display_name=escape_markdown(profile.get("display_name") or "kamu", version=2)
             ),
             parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=main_menu_keyboard(),
@@ -94,13 +96,13 @@ async def cmd_connect(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     try:
         profile_service = _make_profile_service_admin()
-        profile_service.verify_and_link_telegram(code=code, telegram_chat_id=chat_id)
+        await run_in_threadpool(profile_service.verify_and_link_telegram, code=code, telegram_chat_id=chat_id)
 
         linked_profile = await get_linked_profile(chat_id)
         display_name = (linked_profile or {}).get("display_name") or "kamu"
 
         await update.message.reply_text(
-            messages.CONNECT_SUCCESS.format(display_name=display_name),
+            messages.CONNECT_SUCCESS.format(display_name=escape_markdown(display_name, version=2)),
             parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=main_menu_keyboard(),
         )
@@ -131,7 +133,7 @@ async def cmd_disconnect(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     try:
         profile_repo = _make_profile_repo_admin()
-        profile_repo.unlink_telegram(user_id=profile["id"])
+        await run_in_threadpool(profile_repo.unlink_telegram, user_id=profile["id"])
 
         context.user_data.clear()
 

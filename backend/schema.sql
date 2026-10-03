@@ -4,7 +4,9 @@
 CREATE TABLE IF NOT EXISTS expenses (
     id               UUID           DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id          UUID           REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    amount           NUMERIC(15, 2) NOT NULL,
+    amount           NUMERIC(15, 2) NOT NULL
+        CONSTRAINT expenses_amount_positive_finite
+        CHECK (amount > 0 AND amount::text NOT IN ('NaN', 'Infinity', '-Infinity')),
     type             VARCHAR(10)    NOT NULL CHECK (type IN ('income', 'expense')),
     description      TEXT,
     category         VARCHAR(50)    NOT NULL,
@@ -48,9 +50,13 @@ CREATE POLICY "Users can delete own expenses"
 -- Tabel asli tetap bisa diakses untuk keperluan
 -- admin/audit/restore.
 -- =============================================
-CREATE OR REPLACE VIEW active_expenses AS
-    SELECT * FROM expenses
+CREATE OR REPLACE VIEW public.active_expenses WITH (security_invoker = true) AS
+    SELECT id, user_id, amount, type, description, category, subcategory,
+           payment_method, transaction_date, created_at, updated_at, deleted_at
+    FROM public.expenses
     WHERE deleted_at IS NULL;
+
+REVOKE ALL ON public.active_expenses FROM PUBLIC, anon;
 
 -- =============================================
 -- INDEXES
@@ -83,13 +89,15 @@ CREATE TRIGGER set_updated_at
 CREATE OR REPLACE FUNCTION soft_delete_expense(expense_id UUID)
 RETURNS VOID AS $$
 BEGIN
-    UPDATE expenses
+    UPDATE public.expenses
     SET deleted_at = NOW()
     WHERE id = expense_id
       AND auth.uid() = user_id
       AND deleted_at IS NULL;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY INVOKER SET search_path = '';
+
+REVOKE ALL ON FUNCTION public.soft_delete_expense(uuid) FROM PUBLIC, anon;
 
 -- =============================================
 -- FUNCTION: restore soft deleted expense (admin)
@@ -98,17 +106,22 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION restore_expense(expense_id UUID)
 RETURNS VOID AS $$
 BEGIN
-    UPDATE expenses
+    UPDATE public.expenses
     SET deleted_at = NULL
-    WHERE id = expense_id AND user_id = auth.uid();
+    WHERE id = expense_id
+      AND (user_id = auth.uid() OR auth.role() = 'service_role')
+      AND deleted_at IS NOT NULL;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY INVOKER SET search_path = '';
+
+REVOKE ALL ON FUNCTION public.restore_expense(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.restore_expense(uuid) TO authenticated, service_role;
 
 CREATE EXTENSION IF NOT EXISTS vector;
 
 ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS embedding vector(1536);
 
-CREATE INDEX IF NOT EXISTS idx_expenses_embedding 
+CREATE INDEX IF NOT EXISTS idx_expenses_embedding
     ON public.expenses USING hnsw (embedding vector_cosine_ops);
 
 CREATE OR REPLACE FUNCTION match_expense(
@@ -177,6 +190,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     display_name    TEXT,       -- Nama tampilan user
     bio             TEXT,       -- Bio / deskripsi singkat
     avatar_url      TEXT,       -- URL foto profil
+    timezone        TEXT        NOT NULL DEFAULT 'UTC',
     -- telegram_chat_id untuk integrasi bot:
     -- BIGINT karena Telegram chat_id adalah integer besar
     -- UNIQUE agar satu akun Telegram hanya bisa link ke satu akun Taskly
@@ -188,11 +202,10 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- Aktifkan RLS
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- Policy: Semua orang bisa BACA semua profil (publik)
--- Ini perlu agar bot bisa mencari profil berdasarkan telegram_chat_id
-CREATE POLICY "Profiles are publicly readable"
+-- Bot melakukan lookup melalui service_role; profil pengguna tetap privat.
+CREATE POLICY "Users can view own profile"
     ON public.profiles FOR SELECT
-    USING (true);
+    USING (auth.uid() = id);
 
 -- Policy: Hanya pemilik yang bisa UPDATE profilnya sendiri
 CREATE POLICY "Users can update own profile"
@@ -276,6 +289,11 @@ CREATE OR REPLACE TRIGGER set_profiles_updated_at
 
 GRANT SELECT ON public.profiles TO service_role;
 GRANT UPDATE ON public.profiles TO service_role;
+
+REVOKE TRUNCATE, REFERENCES, TRIGGER ON public.expenses, public.profiles FROM authenticated, anon;
+REVOKE ALL ON public.expenses, public.profiles FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+    ON public.active_expenses FROM authenticated, service_role;
 
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -405,3 +423,61 @@ $$;
 CREATE INDEX IF NOT EXISTS idx_profiles_connect_code
     ON public.profiles (connect_code)
     WHERE connect_code IS NOT NULL;  -- Partial index: hanya index row yang punya kode
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS timezone text NOT NULL DEFAULT 'UTC';
+COMMIT;
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS embedding_pending boolean NOT NULL DEFAULT false;
+ALTER TABLE public.expenses ALTER COLUMN embedding_pending SET DEFAULT true;
+ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS embedding_model text;
+
+CREATE OR REPLACE FUNCTION public.invalidate_expense_embedding()
+RETURNS trigger LANGUAGE plpgsql SET search_path = '' AS $$
+BEGIN
+    IF ROW(NEW.amount, NEW.type, NEW.description, NEW.category, NEW.subcategory, NEW.payment_method)
+       IS DISTINCT FROM
+       ROW(OLD.amount, OLD.type, OLD.description, OLD.category, OLD.subcategory, OLD.payment_method) THEN
+        NEW.embedding = NULL;
+        NEW.embedding_pending = true;
+        NEW.embedding_model = NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS invalidate_expense_embedding ON public.expenses;
+CREATE TRIGGER invalidate_expense_embedding
+    BEFORE UPDATE OF amount, type, description, category, subcategory, payment_method
+    ON public.expenses FOR EACH ROW EXECUTE FUNCTION public.invalidate_expense_embedding();
+COMMIT;
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+CREATE OR REPLACE FUNCTION public.match_expense_filtered(
+    query_embedding public.vector(1536), user_id_param uuid,
+    match_threshold double precision DEFAULT 0.5, match_count integer DEFAULT 5,
+    date_from date DEFAULT NULL, date_to date DEFAULT NULL
+)
+RETURNS TABLE (
+    id uuid, user_id uuid, amount numeric, type varchar, description text,
+    category varchar, subcategory varchar, payment_method varchar,
+    transaction_date date, created_at timestamptz, updated_at timestamptz,
+    similarity double precision
+)
+LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $$
+    SELECT t.id, t.user_id, t.amount, t.type, t.description, t.category,
+           t.subcategory, t.payment_method, t.transaction_date,
+           t.created_at, t.updated_at,
+           1 - (t.embedding OPERATOR(public.<=>) query_embedding)
+    FROM public.expenses AS t
+    WHERE t.user_id = user_id_param
+      AND t.deleted_at IS NULL AND t.embedding IS NOT NULL
+      AND (date_from IS NULL OR t.transaction_date >= date_from)
+      AND (date_to IS NULL OR t.transaction_date <= date_to)
+      AND 1 - (t.embedding OPERATOR(public.<=>) query_embedding) > match_threshold
+    ORDER BY t.embedding OPERATOR(public.<=>) query_embedding, t.id
+    LIMIT LEAST(GREATEST(match_count, 1), 50);
+$$;
+REVOKE ALL ON FUNCTION public.match_expense_filtered(public.vector, uuid, double precision, integer, date, date) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.match_expense_filtered(public.vector, uuid, double precision, integer, date, date) TO authenticated, service_role;
+COMMIT;

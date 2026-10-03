@@ -2,7 +2,9 @@ from typing import Annotated
 import jwt
 import logging
 
-from fastapi import Depends, Header, Cookie
+from fastapi import Depends, Header, Request
+from pydantic import ValidationError
+from starlette.concurrency import run_in_threadpool
 from supabase import Client, AuthApiError
 
 from app.core.config import get_settings, Settings
@@ -39,6 +41,8 @@ def _verify_jwt_locally(token: str, settings: Settings) -> UserOut:
             settings.SUPABASE_JWT_SECRET,
             algorithms=["HS256"],
             audience="authenticated",
+            issuer=f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1",
+            options={"require": ["exp", "sub", "iss", "aud"]},
         )
         return UserOut(
             id=payload["sub"],
@@ -49,20 +53,21 @@ def _verify_jwt_locally(token: str, settings: Settings) -> UserOut:
         raise InvalidTokenError("Token expired")
     except jwt.InvalidAudienceError:
         raise InvalidTokenError("Invalid token audience")
-    except jwt.PyJWTError as e:
+    except (jwt.PyJWTError, ValidationError, KeyError) as e:
         logger.error(f"JWT verification failed: {str(e)[:100]}")
         raise InvalidTokenError("Invalid token")
 
 
 async def get_current_user(
+    request: Request,
     authorization: Annotated[str, Header()] = None,
-    access_token_cookie: Annotated[str | None, Cookie(alias="access_token")] = None,
     admin_supabase: Client = Depends(get_admin_supabase_client),
 ) -> UserOut:
+    access_token_cookie = request.cookies.get(get_settings().ACCESS_TOKEN_COOKIE_NAME)
     token = _extract_token(authorization, access_token_cookie)
     
     try:
-        response = admin_supabase.auth.get_user(token)
+        response = await run_in_threadpool(admin_supabase.auth.get_user, token)
         return response.user
     except AuthApiError as e:
         msg = str(e.message).lower()
@@ -74,7 +79,7 @@ async def get_current_user(
     except Exception as e:
         # Catch httpx.ConnectError and other transport errors without importing httpx
         error_type = type(e).__name__
-        if "Connect" in error_type or "Timeout" in error_type or "Network" in error_type:
+        if "Connect" in error_type or "Timeout" in error_type or "Network" in error_type or error_type == "AuthRetryableError":
             logger.warning("Supabase connection failed (%s), using local JWT: %s", error_type, str(e)[:100])
         else:
             logger.error("Unexpected error during Supabase auth: %s - %s", error_type, str(e)[:100])
@@ -84,9 +89,10 @@ async def get_current_user(
     return _verify_jwt_locally(token, settings)
            
 async def get_access_token(
+    request: Request,
     authorization: Annotated[str, Header()] = None,
-    access_token_cookie: Annotated[str | None, Cookie(alias="access_token")] = None,
 ) -> str:
+    access_token_cookie = request.cookies.get(get_settings().ACCESS_TOKEN_COOKIE_NAME)
     return _extract_token(authorization, access_token_cookie)
 
 # Type Aliases for better readability

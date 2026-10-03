@@ -1,8 +1,10 @@
+from starlette.concurrency import run_in_threadpool
 import logging
+from app.bot.replies import send_long_reply
 from telegram import Update
 from telegram.ext import ContextTypes, MessageHandler, filters
 from telegram.constants import ParseMode, ChatAction
- 
+
 from app.bot import messages as msg_templates
 from app.bot.handlers.auth_handler import get_linked_profile
 from app.infrastructure.openai_client import get_openai_client
@@ -24,7 +26,7 @@ PROCESSING_VOICE_MSG = "🎙️ _Sedang memproses pesan suara kamu\\.\\.\\._"
 def _make_services() -> tuple[VoiceService, AIService]:
     """
     Build VoiceService and AIService using admin client (same pattern as expense_handler).
-    No user token needed — identity is verified via Telegram link, 
+    No user token needed — identity is verified via Telegram link,
     and all queries enforce user_id explicitly.
     """
     openai_client = get_openai_client()
@@ -33,7 +35,7 @@ def _make_services() -> tuple[VoiceService, AIService]:
     ai_repo = AIRepository(client=admin_client)
     embedding_service = EmbeddingService(openai_client=openai_client, ai_repo=ai_repo)
     expense_service = ExpenseService(
-        expense_repo=ExpenseRepository(client=admin_client), 
+        expense_repo=ExpenseRepository(client=admin_client),
         embedding_service=embedding_service
     )
     voice_service = VoiceService(openai_client=openai_client)
@@ -50,6 +52,9 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     """Core handler for voice messages from Telegram."""
     chat_id = update.effective_chat.id
     voice = update.message.voice
+    if voice.duration > 300 or (voice.file_size and voice.file_size > 10 * 1024 * 1024):
+        await update.message.reply_text("Pesan suara maksimal 5 menit dan 10 MB.")
+        return
 
     # 1. Check if user has linked their account
     profile = await get_linked_profile(chat_id)
@@ -78,13 +83,13 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
         # 4. Build services (admin client, no user token needed)
         voice_service, ai_service = _make_services()
-        
+
         # 5. Transcribe audio → text
-        transcribed_text, error = voice_service.transcribe_safe(
+        transcribed_text, error = await run_in_threadpool(voice_service.transcribe_safe,
             audio_bytes=audio_bytes,
             filename=f"voice_{chat_id}.ogg",
         )
- 
+
         if error or not transcribed_text.strip():
             await _edit_message_and_inform(
                 update, processing_msg,
@@ -92,11 +97,11 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 "_Coba kirim dengan lebih jelas atau dalam kondisi yang lebih tenang\\._"
             )
             return
-        
+
         # 6. Show transcription preview while AI processes
         preview_text = (
             f"📝 *Transkripsi:*\n"
-            f"_{_escape_md(transcribed_text)}_\n\n"
+            f"_{_escape_md(transcribed_text[:1000])}_\n\n"
             f"💬 _AI sedang merespons\\.\\.\\._"
         )
         await processing_msg.edit_text(
@@ -110,9 +115,10 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             f"[Pesan suara dari user, sudah ditranskripsi]\n{transcribed_text}"
         )
 
-        chat_response = ai_service.chat(
+        chat_response = await run_in_threadpool(ai_service.chat,
             user_id=user_id,
             message=enhanced_message,
+            timezone_name=profile.get("timezone") or "UTC",
             conversation_history=[
                 ConversationMessage(role=m["role"], content=m["content"])
                 for m in history
@@ -127,21 +133,21 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
         # 9. Show final response
         final_text = (
-            f"📝 *Transkripsi:*\n"
-            f"_{_escape_md(transcribed_text)}_\n\n"
-            f"🤖 *AI:*\n{_escape_md(chat_response.reply)}"
+            f"📝 Transkripsi:\n{transcribed_text}\n\n"
+            f"🤖 AI:\n{chat_response.reply}"
         )
- 
+
         await processing_msg.edit_text(
-            final_text,
-            parse_mode=ParseMode.MARKDOWN_V2,
+            final_text[:3500],
         )
- 
+        if len(final_text) > 3500:
+            await send_long_reply(update.message, final_text[3500:])
+
         if chat_response.action_taken:
             logger.info(
                 f"Voice → AI actions: {chat_response.action_taken}, user={user_id}"
             )
- 
+
     except AppError as e:
         logger.error(f"Voice handler AppError: {e.message}")
         await _edit_message_and_inform(
@@ -161,14 +167,14 @@ async def _edit_message_and_inform(update, message, text: str) -> None:
         await message.edit_text(text, parse_mode=ParseMode.MARKDOWN_V2)
     except Exception:
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN_V2)
- 
- 
+
+
 def _escape_md(text: str) -> str:
     """Escape special characters for Telegram MarkdownV2."""
     special_chars = r"_*[]()~`>#+-=|{}.!"
     return "".join(f"\\{c}" if c in special_chars else c for c in text)
- 
- 
+
+
 def build_voice_handler() -> MessageHandler:
     """Factory function to create MessageHandler for voice messages."""
     return MessageHandler(filters.VOICE, handle_voice)

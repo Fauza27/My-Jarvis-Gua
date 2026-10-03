@@ -16,6 +16,10 @@ class UserAlreadyExistsError(AppError):
     """Raised when trying to create a user that already exists."""
     pass
 
+class ConflictError(AppError):
+    """Raised when an operation conflicts with an existing resource."""
+    pass
+
 class EmailNotConfirmedError(AppError):
     """Raised when user tries to login but email is not confirmed."""
     pass

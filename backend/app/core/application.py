@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -13,7 +14,7 @@ from telegram import Update
 from app.core.rate_limit import limiter
 
 from app.core.config import get_settings
-from app.infrastructure.supabase_client import get_supabase_client
+from app.infrastructure.supabase_client import get_admin_supabase_client
 from app.core.exceptions import (
     AppError,
     AuthenticationError,
@@ -23,6 +24,7 @@ from app.core.exceptions import (
     NotFoundError,
     UserAlreadyExistsError,
     ValidationError,
+    ConflictError,
 )
 
 from app.api import auth, expense, profile, ai
@@ -52,7 +54,7 @@ async def lifespan(app: FastAPI):
         await bot_app.bot.set_webhook(
             url=webhook_url,
             secret_token=settings.TELEGRAM_WEBHOOK_SECRET or None,
-            drop_pending_updates=True,
+            drop_pending_updates=False,
         )
         await bot_app.start()
 
@@ -135,6 +137,7 @@ def _register_exception_handlers(app: FastAPI):
         )
 
     @app.exception_handler(UserAlreadyExistsError)
+    @app.exception_handler(ConflictError)
     async def conflict_error_handler(request: Request, exc: AppError):
         return JSONResponse(
             status_code=409,
@@ -165,6 +168,9 @@ def _register_exception_handlers(app: FastAPI):
 
 def _register_routers(app: FastAPI):
     API_PREFIX = "/api"
+    # ConversationHandler requires sequential updates. Keep processing inside
+    # the HTTP request so request-based Cloud Run CPU remains allocated.
+    telegram_update_lock = asyncio.Lock()
 
     app.include_router(auth.router, prefix=API_PREFIX)
     app.include_router(expense.router, prefix=API_PREFIX)
@@ -175,7 +181,7 @@ def _register_routers(app: FastAPI):
     # Telegram Webhook Endpoint
     # -------------------------------------------------------------------------
     @app.post(
-        "/api/telegram/webhook",
+        get_settings().TELEGRAM_WEBHOOK_PATH,
         tags=["Telegram"],
         summary="Telegram webhook receiver",
         include_in_schema=False,
@@ -203,7 +209,8 @@ def _register_routers(app: FastAPI):
         data = await request.json()
         bot_app = request.app.state.bot_app
         update = Update.de_json(data=data, bot=bot_app.bot)
-        await bot_app.process_update(update)
+        async with telegram_update_lock:
+            await bot_app.process_update(update)
 
         return JSONResponse(content={"ok": True})
 
@@ -211,7 +218,7 @@ def _register_routers(app: FastAPI):
     # Health check endpoint with dependency check
     # -------------------------------------------------------------------------
     @app.get("/health", tags=["System"], summary="Health check")
-    async def health_check(supabase: Client = Depends(get_supabase_client)):
+    def health_check(supabase: Client = Depends(get_admin_supabase_client)):
         settings = get_settings()
         health_status = {
             "status": "healthy",
@@ -222,13 +229,12 @@ def _register_routers(app: FastAPI):
         
         # Check Supabase connection
         try:
-            # Simple check - try to get session
-            supabase.auth.get_session()
+            supabase.table("profiles").select("id", head=True).limit(1).execute()
             health_status["supabase"] = "connected"
         except Exception as e:
             health_status["status"] = "unhealthy"
             health_status["supabase"] = "disconnected"
-            health_status["error"] = str(e)[:100]
+            logger.warning("Health database check failed: %s", type(e).__name__)
 
         # Check Telegram bot status
         if hasattr(app.state, "bot_app"):
@@ -236,7 +242,7 @@ def _register_routers(app: FastAPI):
         else:
             health_status["telegram_bot"] = "not started"
         
-        return health_status
+        return JSONResponse(content=health_status, status_code=200 if health_status["status"] == "healthy" else 503)
     
     @app.get("/")
     async def root():

@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr, field_validator, Field
+from app.models.timezone import TimeZone
 
 class RegisterRequest(BaseModel):
     email: EmailStr = Field(max_length=254)
@@ -53,6 +54,7 @@ class RegisterRequest(BaseModel):
     }
 
 class LoginRequest(BaseModel):
+    timezone: TimeZone | None = None
     email: EmailStr = Field(max_length=254)
     password: str = Field(max_length=128)
 
@@ -80,8 +82,10 @@ class ResetPasswordRequest(BaseModel):
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str | None = None
+    timezone: TimeZone | None = None
 
 class SessionSyncRequest(BaseModel):
+    timezone: TimeZone | None = None
     access_token: str
     refresh_token: str
     expires_at: int

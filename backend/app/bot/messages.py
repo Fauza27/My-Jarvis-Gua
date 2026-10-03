@@ -1,7 +1,7 @@
 WELCOME = """
-👋 *Halo, {first_name}\!*
+👋 *Halo, {first_name}\\!*
  
-Selamat datang di *My Jarvis Gua Bot* — Personal asisten kamu di Telegram\!
+Selamat datang di *My Jarvis Gua Bot* — Personal asisten kamu di Telegram\\!
  
 Untuk mulai, hubungkan akun kamu terlebih dahulu dengan perintah:
 👉 `/connect <kode>`
@@ -9,15 +9,15 @@ Untuk mulai, hubungkan akun kamu terlebih dahulu dengan perintah:
 Ambil kode dari web app:
 Profile → Hubungkan Telegram → Generate Kode
  
-Sudah punya akun? Langsung connect\!
-Belum punya? Daftar dulu di [My\-Jarvis\-Gua\.com](http://localhost:3000)
+Sudah punya akun? Langsung connect\\!
+Belum punya? Daftar dulu di [My\\-Jarvis\\-Gua\\.com](http://localhost:3000)
 """.strip()
  
 ALREADY_CONNECTED = """
-✅ *Akun kamu sudah terhubung\!*
+✅ *Akun kamu sudah terhubung\\!*
  
-Halo, *{display_name}*\! Akun kamu sudah aktif\.
-Gunakan /help untuk melihat semua perintah\.
+Halo, *{display_name}*\\! Akun kamu sudah aktif\\.
+Gunakan /help untuk melihat semua perintah\\.
 """.strip()
  
 HELP_TEXT = """
@@ -32,10 +32,10 @@ HELP_TEXT = """
 /list — Lihat daftar transaksi
 /stats — Lihat ringkasan keuangan
 
-*Chat Natural Language \(tanpa command\):*
+*Chat Natural Language \\(tanpa command\\):*
 Kamu bisa langsung ketik pesan biasa, contoh:
 • `catat pengeluaran 25000 untuk makan siang`
-• `berapa total pengeluaran saya bulan ini\?`
+• `berapa total pengeluaran saya bulan ini\\?`
 • `hapus transaksi id xxxxx`
 
 *Profil:*
@@ -60,16 +60,16 @@ ASK_CONNECT_CODE = """
 Gunakan format berikut:
 `/connect MYJARVIS-AB12CD`
 
-Ambil kode dari web app di menu Profile\.
+Ambil kode dari web app di menu Profile\\.
 """.strip()
  
 CONNECT_SUCCESS = """
-✅ *Berhasil terhubung\!*
+✅ *Berhasil terhubung\\!*
  
-Halo, *{display_name}*\! Akun Telegram kamu sekarang terhubung dengan My\-Jarvis\-Gua\.
+Halo, *{display_name}*\\! Akun Telegram kamu sekarang terhubung dengan My\\-Jarvis\\-Gua\\.
  
-Gunakan /addexpense untuk mencatat transaksi, atau /list untuk melihat riwayat transaksi\.
-Kamu juga bisa langsung chat biasa tanpa command, misalnya: `catat pengeluaran 20000 buat makan`\.
+Gunakan /addexpense untuk mencatat transaksi, atau /list untuk melihat riwayat transaksi\\.
+Kamu juga bisa langsung chat biasa tanpa command, misalnya: `catat pengeluaran 20000 buat makan`\\.
 """.strip()
 
 CONNECT_FAILED_INVALID_CODE = """
@@ -82,12 +82,12 @@ Generate kode baru di web app, lalu coba lagi dengan:
 DISCONNECT_SUCCESS = """
 🔌 *Akun berhasil diputus*
  
-Akun Telegram kamu tidak lagi terhubung dengan My\-Jarvis\-Gua\.
-Gunakan /connect untuk menghubungkan kembali\.
+Akun Telegram kamu tidak lagi terhubung dengan My\\-Jarvis\\-Gua\\.
+Gunakan /connect untuk menghubungkan kembali\\.
 """.strip()
  
 DISCONNECT_NOT_CONNECTED = """
-ℹ️ Akun Telegram kamu belum terhubung dengan My\-Jarvis\-Gua\.
+ℹ️ Akun Telegram kamu belum terhubung dengan My\\-Jarvis\\-Gua\\.
 """.strip()
  
 # ── Add Expense Flow ──────────────────────────────────────────────────────────
@@ -95,7 +95,7 @@ DISCONNECT_NOT_CONNECTED = """
 ASK_EXPENSE_AMOUNT = """
 💸 *Tambah Transaksi Baru*
  
-Masukkan *nominal* transaksi kamu \\(angka saja\\)\.
+Masukkan *nominal* transaksi kamu \\(angka saja\\)\\.
 
 Contoh: `15000` atau `25000.50`
  
@@ -116,25 +116,25 @@ Contoh: `makanan`, `transport`, `gaji`, `tagihan`
 """.strip()
 
 ASK_EXPENSE_DESCRIPTION = """
-📝 Masukkan *deskripsi* transaksi \\(opsional\\)\.
+📝 Masukkan *deskripsi* transaksi \\(opsional\\)\\.
 
-Ketik /skip jika tidak ada deskripsi\.
+Ketik /skip jika tidak ada deskripsi\\.
 """.strip()
  
 ASK_EXPENSE_DATE = """
 📅 Kapan *tanggal transaksi*\\-nya?
  
 Format: `YYYY-MM-DD` \\(contoh: `2025-03-31`\\)
-Atau ketik /skip jika pakai tanggal hari ini\.
+Atau ketik /skip jika pakai tanggal hari ini\\.
 """.strip()
  
 EXPENSE_CREATED = """
-✅ *Transaksi berhasil disimpan\!*
+✅ *Transaksi berhasil disimpan\\!*
  
 📌 *{title}*
 {date_line}
  
-Gunakan /list untuk melihat semua transaksi\.
+Gunakan /list untuk melihat semua transaksi\\.
 """.strip()
  
 EXPENSE_CREATED_DATE_LINE = "📅 Tanggal transaksi: {due_date}"
@@ -145,7 +145,7 @@ EXPENSE_CREATED_NO_DATE_LINE = "📅 Tanggal transaksi: Hari ini"
 NO_EXPENSES = """
 📋 *Belum ada data transaksi*
  
-Tambahkan transaksi pertama kamu dengan /addexpense\! 🚀
+Tambahkan transaksi pertama kamu dengan /addexpense\\! 🚀
 """.strip()
  
 EXPENSE_LIST_HEADER = "📋 *Daftar Transaksi kamu \\({count} data\\):*\n\n"
@@ -163,7 +163,6 @@ PROFILE_INFO = """
 👤 *Profil Kamu*
  
 📛 Nama: *{display_name}*
-📧 Email: `{email}`
 📝 Bio: _{bio}_
 🔗 Telegram: ✅ Terhubung
 📅 Bergabung: {created_at}
@@ -193,8 +192,8 @@ PROFILE_UPDATED = "✅ Profil berhasil diperbarui\\!"
 NOT_CONNECTED = """
 🔒 *Akun belum terhubung*
  
-Kamu belum menghubungkan akun My\-Jarvis\-Gua ke Telegram\.
-Gunakan /connect untuk memulai\.
+Kamu belum menghubungkan akun My\\-Jarvis\\-Gua ke Telegram\\.
+Gunakan /connect untuk memulai\\.
 """.strip()
  
 CANCELLED = "❌ Aksi dibatalkan\\."

@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, status, BackgroundTasks
-from fastapi import Query   
-from fastapi.responses import Response
+from fastapi import APIRouter, Depends, status, BackgroundTasks, Header
+from uuid import UUID
+from fastapi import Query
+from fastapi.responses import StreamingResponse
 
 from app.core.dependencies import CurrentUser, AccessToken
 from app.infrastructure.supabase_client import get_user_client, get_admin_supabase_client
@@ -36,18 +37,19 @@ def get_expense_service(token: AccessToken) -> ExpenseService:
     status_code=status.HTTP_200_OK,
     summary="Export my expenses as CSV",
 )
-async def export_expenses_csv(
+def export_expenses_csv(
     current_user: CurrentUser,
     expense_service: ExpenseService = Depends(get_expense_service),
     expense_type: str | None = Query(None, alias="type", pattern="^(income|expense)$"),
     category: str | None = Query(None),
     q: str | None = Query(None),
-    date_from: str | None = Query(None, pattern="^\d{4}-\d{2}-\d{2}$"),
-    date_to: str | None = Query(None, pattern="^\d{4}-\d{2}-\d{2}$"),
+    date_from: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    date_to: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
     sort_by: str = Query("created_at", pattern="^(created_at|transaction_date|amount)$"),
     sort_order: str = Query("desc", pattern="^(asc|desc)$"),
-) -> Response:
-    csv_content = expense_service.export_expenses_csv(
+) -> StreamingResponse:
+    expense_service.validate_date_range(date_from, date_to)
+    csv_content = expense_service.iter_expenses_csv(
         user_id=current_user.id,
         expense_type=expense_type,
         category=category,
@@ -58,7 +60,7 @@ async def export_expenses_csv(
         sort_order=sort_order,
     )
 
-    return Response(
+    return StreamingResponse(
         content=csv_content,
         media_type="text/csv",
         headers={"Content-Disposition": 'attachment; filename="expenses_export.csv"'},
@@ -71,7 +73,7 @@ async def export_expenses_csv(
     status_code=status.HTTP_200_OK,
     summary="All-time summary of my expenses",
 )
-async def get_expense_summary(
+def get_expense_summary(
     current_user: CurrentUser,
     expense_service: ExpenseService = Depends(get_expense_service),
 ) -> ExpenseSummaryResponse:
@@ -85,7 +87,7 @@ async def get_expense_summary(
     status_code=status.HTTP_200_OK,
     summary="Monthly summary of my expenses",
 )
-async def get_expense_summary_by_month(
+def get_expense_summary_by_month(
     current_user: CurrentUser,
     month: int = Query(..., ge=1, le=12),
     year: int = Query(..., ge=2000, le=2100),
@@ -105,7 +107,7 @@ async def get_expense_summary_by_month(
     status_code=status.HTTP_200_OK,
     summary="Yearly summary of my expenses",
 )
-async def get_expense_summary_by_year(
+def get_expense_summary_by_year(
     current_user: CurrentUser,
     year: int = Query(..., ge=2000, le=2100),
     expense_service: ExpenseService = Depends(get_expense_service),
@@ -123,7 +125,7 @@ async def get_expense_summary_by_year(
     status_code=status.HTTP_200_OK,
     summary="See all my expenses",
 )
-async def get_all_expenses(
+def get_all_expenses(
     current_user: CurrentUser,
     expense_service: ExpenseService = Depends(get_expense_service),
     limit: int = Query(100, ge=1, le=200),
@@ -131,8 +133,8 @@ async def get_all_expenses(
     expense_type: str | None = Query(None, alias="type", pattern="^(income|expense)$"),
     category: str | None = Query(None),
     q: str | None = Query(None),
-    date_from: str | None = Query(None, pattern="^\d{4}-\d{2}-\d{2}$"),
-    date_to: str | None = Query(None, pattern="^\d{4}-\d{2}-\d{2}$"),
+    date_from: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    date_to: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
     sort_by: str = Query("created_at", pattern="^(created_at|transaction_date|amount)$"),
     sort_order: str = Query("desc", pattern="^(asc|desc)$"),
 ) -> ExpensesListOut:
@@ -157,7 +159,7 @@ async def get_all_expenses(
     status_code=status.HTTP_200_OK,
     summary="See details of an expense",
 )
-async def get_expense_by_id(
+def get_expense_by_id(
     expense_id: str,
     current_user: CurrentUser,
     expense_service: ExpenseService = Depends(get_expense_service),
@@ -175,27 +177,30 @@ async def get_expense_by_id(
     status_code=status.HTTP_201_CREATED,
     summary="Create a new expense",
 )
-async def create_expense(
+def create_expense(
     request: CreateExpenseRequest,
     current_user: CurrentUser,
     background_tasks: BackgroundTasks,
     expense_service: ExpenseService = Depends(get_expense_service),
+    idempotency_key: UUID | None = Header(None, alias="Idempotency-Key"),
 ) -> ExpenseOut:
     """Create a new expense."""
+    options = {"idempotency_key": str(idempotency_key)} if idempotency_key else {}
     return expense_service.create_expense(
         user_id=current_user.id,
         request=request,
         background_tasks=background_tasks,
+        **options,
     )
 
 
-@router.patch(                             
+@router.patch(
     "/{expense_id}",
     response_model=ExpenseOut,
     status_code=status.HTTP_200_OK,
     summary="Update an existing expense",
 )
-async def update_expense(
+def update_expense(
     expense_id: str,
     request: UpdateExpenseRequest,
     current_user: CurrentUser,
@@ -213,10 +218,10 @@ async def update_expense(
 
 @router.delete(
     "/{expense_id}",
-    status_code=status.HTTP_204_NO_CONTENT, 
+    status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete an expense",
 )
-async def delete_expense(
+def delete_expense(
     expense_id: str,
     current_user: CurrentUser,
     expense_service: ExpenseService = Depends(get_expense_service),

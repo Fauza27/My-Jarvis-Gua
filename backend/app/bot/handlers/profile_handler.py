@@ -1,3 +1,4 @@
+from starlette.concurrency import run_in_threadpool
 # =============================================================================
 # app/bot/handlers/profile_handler.py — Bot Profile Handler
 #
@@ -56,7 +57,7 @@ async def cmd_profile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     try:
         repo = _make_profile_repo()
-        profile_data = repo.find_by_user_id(linked["id"])
+        profile_data = await run_in_threadpool(repo.find_by_user_id, linked["id"])
         profile_out = ProfileOut.from_db(profile_data)
 
         try:
@@ -67,7 +68,6 @@ async def cmd_profile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
         text = messages.PROFILE_INFO.format(
             display_name=_escape_markdown_v2(profile_out.display_name or "Belum diset"),
-            email=_escape_markdown_v2(linked.get("email") or "-"),
             bio=_escape_markdown_v2(profile_out.bio or "Belum ada bio"),
             created_at=_escape_markdown_v2(created_str),
         )
@@ -94,7 +94,7 @@ async def cmd_editprofile_start(update: Update, context: ContextTypes.DEFAULT_TY
     current_name = linked.get("display_name") or "Belum diset"
     try:
         repo = _make_profile_repo()
-        profile_data = repo.find_by_user_id(user_id)
+        profile_data = await run_in_threadpool(repo.find_by_user_id, user_id)
         current_name = profile_data.get("display_name") or current_name
     except Exception:
         pass
@@ -111,7 +111,7 @@ async def _prompt_bio_step(update: Update, user_id: str) -> None:
     current_bio = "Belum ada bio"
     try:
         repo = _make_profile_repo()
-        profile_data = repo.find_by_user_id(user_id)
+        profile_data = await run_in_threadpool(repo.find_by_user_id, user_id)
         current_bio = profile_data.get("bio") or current_bio
     except Exception:
         pass
@@ -146,11 +146,16 @@ async def handle_new_bio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     user_id = context.user_data.get("edit_user_id")
     new_name = context.user_data.get("edit_display_name")
 
+    linked = await require_linked_account(update)
+    if not linked or str(linked["id"]) != str(user_id):
+        _clear_edit_context(context)
+        return ConversationHandler.END
+
     try:
         payload = UpdateProfileRequest(display_name=new_name, bio=new_bio).to_update_dict()
         if payload:
             repo = _make_profile_repo()
-            repo.update(user_id=user_id, update_data=payload)
+            await run_in_threadpool(repo.update, user_id=user_id, update_data=payload)
 
         await update.message.reply_text(messages.PROFILE_UPDATED, parse_mode=ParseMode.MARKDOWN_V2)
     except AppError:
@@ -169,11 +174,16 @@ async def handle_skip_bio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     user_id = context.user_data.get("edit_user_id")
     new_name = context.user_data.get("edit_display_name")
 
+    linked = await require_linked_account(update)
+    if not linked or str(linked["id"]) != str(user_id):
+        _clear_edit_context(context)
+        return ConversationHandler.END
+
     try:
         payload = UpdateProfileRequest(display_name=new_name).to_update_dict()
         if payload:
             repo = _make_profile_repo()
-            repo.update(user_id=user_id, update_data=payload)
+            await run_in_threadpool(repo.update, user_id=user_id, update_data=payload)
 
         await update.message.reply_text(messages.PROFILE_UPDATED, parse_mode=ParseMode.MARKDOWN_V2)
     except AppError:

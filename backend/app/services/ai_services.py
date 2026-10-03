@@ -1,6 +1,7 @@
 import json
 import logging
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from openai import OpenAI
 
@@ -16,13 +17,13 @@ from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
-def _build_system_prompt() -> str:
+def _build_system_prompt(timezone_name: str = "UTC") -> str:
     """build the system prompt for the AI assistant, including tool descriptions and usage instructions."""
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = datetime.now(ZoneInfo(timezone_name)).strftime("%Y-%m-%d")
     return f"""
 Kamu adalah asisten keuangan pribadi berbahasa Indonesia yang membantu user mencatat dan menganalisis pemasukan/pengeluaran.
 
-Tanggal hari ini (UTC): {today}
+Tanggal hari ini ({timezone_name}): {today}
 
 Tujuan utama:
 1) Membantu user mencatat transaksi dengan benar.
@@ -90,15 +91,19 @@ class AIService:
         user_id: str,
         message: str,
         conversation_history: list[ConversationMessage],
+        timezone_name: str = "UTC",
     ) -> ChatResponse:
         """Use case 1: Handles a chat request by generating a response from the AI assistant, including tool function calls if needed."""
-        messages = self._build_messages(conversation_history, message)
+        messages = self._build_messages(conversation_history, message, timezone_name)
         dispatcher = ToolDispatcher(
             expense_service=self._expense_service,
-            user_id=user_id
+            user_id=user_id,
+            timezone_name=timezone_name,
         )
         final_reply, actions_taken = self._run_chat_loop(messages, dispatcher)
-        updated_history = list(conversation_history) + [
+        # Match the history contract even if a provider ignores output budgets.
+        final_reply = final_reply[:8000]
+        updated_history = list(conversation_history[-18:]) + [
             ConversationMessage(role="user", content=message),
             ConversationMessage(role="assistant", content=final_reply),
         ]
@@ -112,6 +117,7 @@ class AIService:
         self,
         history: list[ConversationMessage],
         new_message: str,
+        timezone_name: str = "UTC",
     ) -> list[dict]:
         """
         Arrange messages array for OpenAI Responses API input.
@@ -125,9 +131,11 @@ class AIService:
         ]
         """
         messages = [
-            {"role": "system", "content": _build_system_prompt()}
+            {"role": "system", "content": _build_system_prompt(timezone_name)}
         ]
-        for msg in history:
+        for msg in history[-20:]:
+            if msg.role not in {"user", "assistant"}:
+                raise ValueError("Unsupported conversation role")
             messages.append({"role": msg.role, "content": msg.content})
 
         messages.append({"role": "user", "content": new_message})
@@ -227,7 +235,9 @@ class AIService:
             Tuple (final_reply_text, list_of_actions_taken)
         """
         actions_taken: list[str] = []
-        MAX_ITERATIONS = 10
+        MAX_ITERATIONS = 4
+        completed_results: list[dict] = []
+        tool_count = 0
         tools = self._normalize_tools_for_responses(TOOLS)
 
         response = self._openai_client.responses.create(
@@ -235,6 +245,7 @@ class AIService:
             input=messages,
             tools=tools,
             tool_choice="auto",
+            max_output_tokens=2000,
         )
 
         for _ in range(MAX_ITERATIONS):
@@ -246,6 +257,8 @@ class AIService:
                     return final_reply, actions_taken
 
                 logger.warning("Responses API returned no tool call and no text output")
+                if completed_results:
+                    return "Transaksi sudah diproses:\n" + json.dumps(completed_results, ensure_ascii=False), actions_taken
                 return "Maaf, saya belum bisa memproses permintaan ini.", actions_taken
 
             tool_outputs = []
@@ -254,10 +267,19 @@ class AIService:
                 func_args = tool_call["arguments"]
                 call_id = tool_call["call_id"]
 
-                logger.info("AI calling tool: %s(%s...)", func_name, func_args[:100])
+                logger.info("AI calling tool: %s", func_name)
 
-                result = dispatcher.execute(func_name, func_args)
-                actions_taken.append(func_name)
+                tool_count += 1
+                result = dispatcher.execute(func_name, func_args) if tool_count <= 8 else {"error": "Tool limit exceeded"}
+                if result.get("status") == "success":
+                    actions_taken.append(func_name)
+                    if func_name in {"create_expense", "update_expense", "delete_expense"}:
+                        data = result.get("data") or {}
+                        completed_results.append({
+                            "tool": func_name,
+                            "message": str(result.get("message", ""))[:200],
+                            "data": {key: data[key] for key in ["id", "amount", "type", "category", "transaction_date"] if key in data},
+                        })
                 tool_outputs.append(
                     {
                         "type": "function_call_output",
@@ -266,16 +288,26 @@ class AIService:
                     }
                 )
 
-            response = self._openai_client.responses.create(
-                model=self.settings.OPENAI_CHAT_MODEL,
-                previous_response_id=response.id,
-                input=tool_outputs,
-                tools=tools,
-                tool_choice="auto",
-            )
+            try:
+                response = self._openai_client.responses.create(
+                    model=self.settings.OPENAI_CHAT_MODEL,
+                    previous_response_id=response.id,
+                    input=tool_outputs,
+                    tools=tools,
+                    tool_choice="auto" if tool_count < 8 else "none",
+                    max_output_tokens=2000,
+                )
+            except Exception:
+                if not completed_results:
+                    raise
+                logger.exception("AI response failed after a completed transaction")
+                receipts = json.dumps(completed_results, ensure_ascii=False)
+                return f"Transaksi berikut sudah berhasil diproses. Respons AI terputus; jangan ulangi pencatatan yang sama.\n{receipts}", actions_taken
 
         logger.error("Chat loop exceeded maximum iterations without finishing.")
-        return "Sorry, there was an error processing your request.", actions_taken
+        if completed_results:
+            return "Transaksi sudah diproses:\n" + json.dumps(completed_results, ensure_ascii=False), actions_taken
+        return "Permintaan mencapai batas pemrosesan. Silakan persempit pertanyaan.", actions_taken
 
     # use case 2: semantic search
 
@@ -285,18 +317,32 @@ class AIService:
         query: str,
         match_threshold: float = 0.5,
         match_count: int = 5,
+        date_from: str | None = None,
+        date_to: str | None = None,
     ) -> SemanticSearchResponse:
         """
         Use case: find expense or income.
         """
 
+        if date_from or date_to:
+            from datetime import date
+            from app.core.exceptions import ValidationError
+            try:
+                start = date.fromisoformat(date_from) if date_from else None
+                end = date.fromisoformat(date_to) if date_to else None
+            except ValueError:
+                raise ValidationError("Filters must use a valid calendar date")
+            if start and end and start > end:
+                raise ValidationError("date_from must be before or equal to date_to")
         query_embedding = self._embedding_service.generate_for_query(query)
 
+        filters = {"date_from": date_from, "date_to": date_to} if date_from or date_to else {}
         raw_results = self._ai_repo.semantic_search(
             query_embedding=query_embedding,
             user_id=user_id,
             match_threshold=match_threshold,
             match_count=match_count,
+            **filters,
         )
 
         results = [

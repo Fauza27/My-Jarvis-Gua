@@ -1,3 +1,4 @@
+from datetime import date
 from fastapi import APIRouter, Depends, Query
 from supabase import Client
 
@@ -43,7 +44,7 @@ def get_ai_services(
     summary="Chat with the AI assistant, including tool function calls if needed.",
     description="Sends a message to the AI assistant along with the conversation history, and receives a response that may include tool function calls if needed."
 )
-async def chat(
+def chat(
     body: ChatRequest,
     current_user: CurrentUser,
     service: AIService = Depends(get_ai_services),
@@ -51,7 +52,8 @@ async def chat(
     return service.chat(
         user_id=str(current_user.id),
         message=body.message,
-        conversation_history=body.conversation_history
+        conversation_history=body.conversation_history,
+        timezone_name=body.timezone,
     )
 
 @router.get(
@@ -60,16 +62,21 @@ async def chat(
     summary="Perform a semantic search for expenses based on a query.",
     description="Performs a semantic search for expenses based on the provided query string, returning the most relevant expenses according to their embedding similarity."
 )
-async def semantic_search(
+def semantic_search(
     current_user: CurrentUser,
-    q: str = Query(..., description="The search query string to find similar expenses."),
-    threshold: float = Query(0.5, description="The similarity threshold for matching expenses (between 0 and 1)."),
-    limit: int = Query(5, description="The maximum number of search results to return."),
+    q: str = Query(..., min_length=1, max_length=1000, description="The search query string to find similar expenses."),
+    threshold: float = Query(0.5, ge=0, le=1, description="The similarity threshold for matching expenses (between 0 and 1)."),
+    limit: int = Query(5, ge=1, le=50, description="The maximum number of search results to return."),
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
     service: AIService = Depends(get_ai_services),
 ):
+    filters = {"date_from": date_from.isoformat() if date_from else None,
+               "date_to": date_to.isoformat() if date_to else None} if date_from or date_to else {}
     return service.search(
         user_id=str(current_user.id),
         query=q,
         match_threshold=threshold,
-        match_count=limit
+        match_count=limit,
+        **filters,
     )

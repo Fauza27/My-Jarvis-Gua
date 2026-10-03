@@ -7,12 +7,12 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Install dependencies first (layer caching)
-COPY requirements.txt .
+COPY requirements.txt constraints.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
 
 # Cloud Run injects PORT env var (default 8080)
-# Using shell form so ${PORT} is expanded at runtime
-CMD uvicorn app.core.application:create_app --host 0.0.0.0 --port ${PORT:-8080} --factory
+# Expand PORT, then replace the shell so Uvicorn receives shutdown signals.
+CMD ["sh", "-c", "exec uvicorn app.core.application:create_app --host 0.0.0.0 --port ${PORT:-8080} --factory"]

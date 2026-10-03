@@ -27,6 +27,8 @@ from telegram.ext import (
     ContextTypes,
     MessageHandler,
     filters,
+    TypeHandler,
+    ApplicationHandlerStop,
 )
 
 from app.bot import messages
@@ -34,6 +36,12 @@ from app.bot.handlers import auth_handler, chat_handler, expense_handler, profil
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
+
+
+async def require_private_chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Financial data and connection codes may only be handled in private chats."""
+    if not update.effective_chat or update.effective_chat.type != "private":
+        raise ApplicationHandlerStop
 
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -110,6 +118,7 @@ def create_bot() -> Application:
 
     # Error handler should be registered early.
     app.add_error_handler(error_handler)
+    app.add_handler(TypeHandler(Update, require_private_chat), group=-1)
 
     # Register conversation handlers first.
     app.add_handler(expense_handler.build_addexpense_conversation())

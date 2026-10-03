@@ -1,11 +1,20 @@
 from typing import Optional
 from pydantic import BaseModel, HttpUrl, field_validator
+from app.models.timezone import TimeZone
 
 class UpdateProfileRequest(BaseModel):
     """Request model for updating user profile."""
     display_name: Optional[str] = None
     bio: Optional[str] = None
-    avatar_url: Optional[str] = None
+    avatar_url: Optional[HttpUrl] = None
+    timezone: TimeZone | None = None
+
+    @field_validator("timezone")
+    @classmethod
+    def timezone_cannot_be_cleared(cls, value: str | None) -> str:
+        if value is None:
+            raise ValueError("Timezone cannot be null; use UTC for the default")
+        return value
 
     @field_validator("display_name")
     @classmethod
@@ -22,8 +31,8 @@ class UpdateProfileRequest(BaseModel):
         return v
     
     def to_update_dict(self) -> dict:
-        """only field that not none"""
-        return {k: v for k, v in self.model_dump().items() if v is not None}
+        """Preserve explicit nulls so optional fields can be cleared."""
+        return self.model_dump(mode="json", exclude_unset=True)
 
 class LinkTelegramRequest(BaseModel):
     """data for linking Telegram account."""

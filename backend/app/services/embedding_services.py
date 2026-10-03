@@ -17,7 +17,8 @@ class EmbeddingService:
         """ generates an embedding vector for the given text using OpenAI's embedding model. """
         response = self.openai_client.embeddings.create(
             model=self.settings.OPENAI_EMBEDDING_MODEL,
-            input=text
+            input=text,
+            dimensions=self.settings.OPENAI_EMBEDDING_DIMENSIONS,
         )
         return response.data[0].embedding
     
@@ -30,8 +31,14 @@ class EmbeddingService:
         category: str = None,
         subcategory: str = None,
         payment_method: str = None,
-    ) -> None:
+    ) -> bool:
         """ generates an embedding for the expense and saves it to the database. """
+        source = self._repo.load_embedding_source(expense_id)
+        if not source:
+            return False
+        amount, type = source["amount"], source["type"]
+        description, category = source.get("description"), source.get("category")
+        subcategory, payment_method = source.get("subcategory"), source.get("payment_method")
         text_to_embed = f"{type} {amount}"
         if category:
             text_to_embed += f" {category}"
@@ -42,7 +49,10 @@ class EmbeddingService:
         if payment_method:
             text_to_embed += f" {payment_method}"
         embedding = self.generate_for_query(text_to_embed)
-        self._repo.save_embedding(expense_id=expense_id, embedding=embedding)
+        return self._repo.save_embedding(
+            expense_id=expense_id, embedding=embedding,
+            source_updated_at=source["updated_at"], model=self.settings.OPENAI_EMBEDDING_MODEL,
+        )
     
     def generate_for_expenses_safe(
         self,
@@ -59,7 +69,7 @@ class EmbeddingService:
         used when embedding is optional, so if embedding generation fail, it will not block the main flow.
         """
         try:
-            self.generate_for_expense(
+            return self.generate_for_expense(
                 expense_id=expense_id,
                 amount=amount,
                 type=type,
@@ -68,7 +78,6 @@ class EmbeddingService:
                 subcategory=subcategory,
                 payment_method=payment_method,
             )
-            return True
         except Exception as e:
-            logger.error(f"Failed to generate embedding for expense {expense_id}: {str(e)}")
+            logger.warning("Embedding remains pending for %s (%s)", expense_id, e.__class__.__name__)
             return False

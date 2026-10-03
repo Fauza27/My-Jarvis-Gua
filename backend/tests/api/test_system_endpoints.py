@@ -26,29 +26,29 @@ class TestSystemEndpoints:
         assert "message" in response.json()
 
     def test_health_connected(self, app, client):
-        from app.infrastructure.supabase_client import get_supabase_client
+        from app.infrastructure.supabase_client import get_admin_supabase_client
 
         mock_supabase = MagicMock()
-        mock_supabase.auth.get_session.return_value = None
-        app.dependency_overrides[get_supabase_client] = lambda: mock_supabase
+        mock_supabase.table.return_value.select.return_value.limit.return_value.execute.return_value = MagicMock(data=[])
+        app.dependency_overrides[get_admin_supabase_client] = lambda: mock_supabase
 
         try:
             response = client.get("/health")
             assert response.status_code == 200
-            assert response.json()["status"] in {"healthy", "unhealthy"}
+            assert response.json()["status"] == "healthy"
         finally:
             app.dependency_overrides.clear()
 
     def test_health_disconnected(self, app, client):
-        from app.infrastructure.supabase_client import get_supabase_client
+        from app.infrastructure.supabase_client import get_admin_supabase_client
 
         mock_supabase = MagicMock()
-        mock_supabase.auth.get_session.side_effect = Exception("boom")
-        app.dependency_overrides[get_supabase_client] = lambda: mock_supabase
+        mock_supabase.table.return_value.select.return_value.limit.return_value.execute.side_effect = Exception("boom")
+        app.dependency_overrides[get_admin_supabase_client] = lambda: mock_supabase
 
         try:
             response = client.get("/health")
-            assert response.status_code == 200
+            assert response.status_code == 503
             body = response.json()
             assert body["status"] == "unhealthy"
             assert body["supabase"] == "disconnected"

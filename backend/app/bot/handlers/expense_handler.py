@@ -1,3 +1,6 @@
+from starlette.concurrency import run_in_threadpool
+from datetime import datetime
+from zoneinfo import ZoneInfo
 # =============================================================================
 # app/bot/handlers/expense_handler.py — Bot Expense Handler
 #
@@ -52,7 +55,13 @@ def _escape_markdown_v2(text: str) -> str:
 def _make_expense_service_for_user() -> ExpenseService:
     """Use admin client and always enforce user_id filters at service/repository calls."""
     admin_client = get_admin_supabase_client()
-    return ExpenseService(expense_repo=ExpenseRepository(client=admin_client))
+    from app.infrastructure.openai_client import get_openai_client
+    from app.repositories.ai_repository import AIRepository
+    from app.services.embedding_services import EmbeddingService
+    return ExpenseService(
+        expense_repo=ExpenseRepository(client=admin_client),
+        embedding_service=EmbeddingService(get_openai_client(), AIRepository(admin_client)),
+    )
 
 
 async def require_linked_account(update: Update) -> Optional[dict]:
@@ -89,6 +98,12 @@ async def _create_expense_and_reply(
     transaction_date: Optional[str],
 ) -> int:
     """Persist expense and send confirmation message."""
+    current_profile = await require_linked_account(update)
+    if not current_profile or str(current_profile["id"]) != str(user_id):
+        _clear_add_expense_context(context)
+        return ConversationHandler.END
+    if transaction_date is None:
+        transaction_date = datetime.now(ZoneInfo(current_profile.get("timezone") or "UTC")).date().isoformat()
     try:
         expense_service = _make_expense_service_for_user()
         amount = context.user_data["expense_amount"]
@@ -104,7 +119,7 @@ async def _create_expense_and_reply(
             transaction_date=transaction_date,
         )
 
-        created = expense_service.create_expense(user_id=user_id, request=request)
+        created = await run_in_threadpool(expense_service.create_expense, user_id=user_id, request=request)
 
         summary = (
             f"Rp {created.amount:,.2f} | {created.type} | {created.category}"
@@ -157,7 +172,7 @@ async def handle_expense_amount(update: Update, context: ContextTypes.DEFAULT_TY
             raise ValueError()
     except ValueError:
         await update.message.reply_text(
-            "❌ Nominal tidak valid\. Masukkan angka lebih dari 0\.",
+            "❌ Nominal tidak valid\\. Masukkan angka lebih dari 0\\.",
             parse_mode=ParseMode.MARKDOWN_V2,
         )
         return WAITING_AMOUNT
@@ -172,7 +187,7 @@ async def handle_expense_type(update: Update, context: ContextTypes.DEFAULT_TYPE
     expense_type = update.message.text.strip().lower()
     if expense_type not in {"expense", "income"}:
         await update.message.reply_text(
-            "❌ Tipe harus `expense` atau `income`\.",
+            "❌ Tipe harus `expense` atau `income`\\.",
             parse_mode=ParseMode.MARKDOWN_V2,
         )
         return WAITING_TYPE
@@ -187,7 +202,7 @@ async def handle_expense_category(update: Update, context: ContextTypes.DEFAULT_
     category = update.message.text.strip()
     if not category:
         await update.message.reply_text(
-            "❌ Kategori tidak boleh kosong\.",
+            "❌ Kategori tidak boleh kosong\\.",
             parse_mode=ParseMode.MARKDOWN_V2,
         )
         return WAITING_CATEGORY
@@ -228,7 +243,7 @@ async def handle_expense_date(update: Update, context: ContextTypes.DEFAULT_TYPE
         datetime.strptime(date_input, "%Y-%m-%d")
     except ValueError:
         await update.message.reply_text(
-            "❌ Format tanggal salah\. Gunakan `YYYY\-MM\-DD`\.",
+            "❌ Format tanggal salah\\. Gunakan `YYYY\\-MM\\-DD`\\.",
             parse_mode=ParseMode.MARKDOWN_V2,
         )
         return WAITING_DATE
@@ -259,7 +274,7 @@ async def cmd_list_expenses(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     try:
         expense_service = _make_expense_service_for_user()
-        expense_list = expense_service.get_all_expenses(
+        expense_list = await run_in_threadpool(expense_service.get_all_expenses,
             user_id=user_id,
             limit=20,
             sort_by="transaction_date",
@@ -311,12 +326,12 @@ async def callback_view_expense(update: Update, context: ContextTypes.DEFAULT_TY
     _, expense_id = query.data.split(":", 1)
     profile = await get_linked_profile(update.effective_chat.id)
     if not profile:
-        await query.edit_message_text("❌ Akun tidak terhubung\.", parse_mode=ParseMode.MARKDOWN_V2)
+        await query.edit_message_text("❌ Akun tidak terhubung\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return
 
     try:
         expense_service = _make_expense_service_for_user()
-        expense = expense_service.get_expense_by_id(user_id=profile["id"], expense_id=expense_id)
+        expense = await run_in_threadpool(expense_service.get_expense_by_id, user_id=profile["id"], expense_id=expense_id)
 
         detail_text = (
             "🧾 *Detail Transaksi*\n\n"
@@ -352,15 +367,15 @@ async def callback_confirm_delete(update: Update, context: ContextTypes.DEFAULT_
     _, expense_id = query.data.split(":", 1)
     profile = await get_linked_profile(update.effective_chat.id)
     if not profile:
-        await query.edit_message_text("❌ Akun tidak terhubung\.", parse_mode=ParseMode.MARKDOWN_V2)
+        await query.edit_message_text("❌ Akun tidak terhubung\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return
 
     try:
         expense_service = _make_expense_service_for_user()
-        expense_service.delete_expense(user_id=profile["id"], expense_id=expense_id)
+        await run_in_threadpool(expense_service.delete_expense, user_id=profile["id"], expense_id=expense_id)
 
         await query.edit_message_text(
-            "🗑️ Data transaksi berhasil dihapus\.",
+            "🗑️ Data transaksi berhasil dihapus\\.",
             parse_mode=ParseMode.MARKDOWN_V2,
         )
     except NotFoundError:
@@ -384,7 +399,7 @@ async def callback_mark_done(update: Update, context: ContextTypes.DEFAULT_TYPE)
     query = update.callback_query
     await query.answer()
     await query.edit_message_text(
-        "ℹ️ Fitur tandai selesai tidak digunakan di money tracker\.",
+        "ℹ️ Fitur tandai selesai tidak digunakan di money tracker\\.",
         parse_mode=ParseMode.MARKDOWN_V2,
     )
 
@@ -399,7 +414,7 @@ async def cmd_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     try:
         expense_service = _make_expense_service_for_user()
-        summary = expense_service.get_expense_summary_all_time(user_id=profile["id"])
+        summary = await run_in_threadpool(expense_service.get_expense_summary_all_time, user_id=profile["id"])
 
         text = (
             "📊 *Ringkasan Keuangan*\n\n"

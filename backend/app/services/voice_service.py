@@ -14,6 +14,8 @@ class VoiceService:
     
     def transcribe(self, audio_bytes: bytes, filename: str = "voice.ogg") -> str:
         """Transcribe audio bytes using OpenAI's Whisper model."""
+        if not audio_bytes or len(audio_bytes) > 10 * 1024 * 1024:
+            raise ValueError("Voice file must be between 1 byte and 10 MB")
         audio_file = io.BytesIO(audio_bytes)
         logger.info(
             f"Transcribing audio file: {len(audio_bytes)} bytes, filename: {filename}"

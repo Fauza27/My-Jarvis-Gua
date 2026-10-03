@@ -9,6 +9,7 @@ tests/
 *.md
 *.txt
 !requirements.txt
+!constraints.txt
 error.txt
 bot_debug.log
 .pytest_cache/

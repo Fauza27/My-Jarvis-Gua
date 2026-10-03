@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, status, Response, Cookie, Request
+from fastapi import APIRouter, Depends, status, Response, Request
+from starlette.concurrency import run_in_threadpool
 from supabase import Client, AuthApiError
 import time
+import logging
 
 from app.core.config import get_settings
 from app.core.dependencies import CurrentUser, AccessToken
@@ -50,6 +52,14 @@ def _clear_auth_cookies(response: Response) -> None:
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
+
+def _save_device_timezone(user_id: str, timezone_name: str | None) -> None:
+    if timezone_name:
+        try:
+            get_admin_supabase_client().table("profiles").update({"timezone": timezone_name}).eq("id", user_id).execute()
+        except Exception as exc:
+            logging.getLogger(__name__).warning("Unable to save device timezone: %s", type(exc).__name__)
+
 def get_auth_service(
     supabase: Client = Depends(get_supabase_client),
     admin_supabase: Client = Depends(get_admin_supabase_client),
@@ -64,7 +74,7 @@ def get_auth_service(
     summary="Register a new user",
 )
 @limiter.limit("5/minute")
-async def register(
+def register(
     request: Request,
     body: RegisterRequest,
     service: AuthService = Depends(get_auth_service),
@@ -83,20 +93,21 @@ async def register(
     summary="Login user and get access token",
 )
 @limiter.limit("5/minute")
-async def login(
+def login(
     request: Request,
     body: LoginRequest,
     response: Response,
     service: AuthService = Depends(get_auth_service),
 ):
     token_out = service.login(email=body.email, password=body.password)
+    _save_device_timezone(str(token_out.user.id), body.timezone)
     _set_auth_cookies(response, token_out.access_token, token_out.refresh_token, token_out.expires_at)
-    
+
     settings = get_settings()
     if settings.is_production:
         token_out.access_token = ""
         token_out.refresh_token = ""
-        
+
     return token_out
 
 @router.post(
@@ -106,14 +117,18 @@ async def login(
     summary="Logout user by revoking the access token",
 )
 async def logout(
-    _current_user: CurrentUser,
-    access_token: AccessToken,
+    request: Request,
     response: Response,
     service: AuthService = Depends(get_auth_service),
 ):
-    message = service.logout(access_token=access_token)
     _clear_auth_cookies(response)
-    return message
+    token = request.cookies.get(get_settings().ACCESS_TOKEN_COOKIE_NAME)
+    authorization = request.headers.get("Authorization", "")
+    if authorization.startswith("Bearer "):
+        token = authorization.removeprefix("Bearer ").strip()
+    if token:
+        await run_in_threadpool(service.logout, access_token=token)
+    return MessageOut(message="Logout successful.")
 
 @router.post(
     "/refresh",
@@ -121,25 +136,26 @@ async def logout(
     status_code=status.HTTP_200_OK,
     summary="Refresh access token using refresh token",
 )
-async def refresh_token(
+def refresh_token(
+    request: Request,
     response: Response,
     body: RefreshTokenRequest | None = None,
-    refresh_token_cookie: str | None = Cookie(default=None, alias="refresh_token"),
     service: AuthService = Depends(get_auth_service),
 ):
     refresh_token = body.refresh_token if body else None
-    refresh_token = refresh_token or refresh_token_cookie
+    refresh_token = refresh_token or request.cookies.get(get_settings().REFRESH_TOKEN_COOKIE_NAME)
     if not refresh_token:
         raise AuthenticationError("Refresh token is missing")
 
     token_out = service.refresh_session(refresh_token=refresh_token)
+    _save_device_timezone(str(token_out.user.id), body.timezone if body else None)
     _set_auth_cookies(response, token_out.access_token, token_out.refresh_token, token_out.expires_at)
-    
+
     settings = get_settings()
     if settings.is_production:
         token_out.access_token = ""
         token_out.refresh_token = ""
-        
+
     return token_out
 
 @router.post(
@@ -148,19 +164,20 @@ async def refresh_token(
     status_code=status.HTTP_200_OK,
     summary="Sync OAuth session tokens into HttpOnly cookies",
 )
-async def sync_session(
+def sync_session(
     body: SessionSyncRequest,
     response: Response,
     admin_supabase: Client = Depends(get_admin_supabase_client),
 ):
     try:
-        admin_supabase.auth.get_user(body.access_token)
+        user_response = admin_supabase.auth.get_user(body.access_token)
     except AuthApiError as e:
         msg = str(e.message).lower()
         if any(kw in msg for kw in ["invalid", "expired", "jwt", "token"]):
             raise InvalidTokenError("Invalid or expired token")
         raise
 
+    _save_device_timezone(str(user_response.user.id), body.timezone)
     _set_auth_cookies(response, body.access_token, body.refresh_token, body.expires_at)
     return MessageOut(message="Session synchronized")
 
@@ -185,7 +202,7 @@ async def verify_token(
     summary="Request password reset email",
 )
 @limiter.limit("3/minute")
-async def forgot_password(
+def forgot_password(
     request: Request,
     body: ResetPasswordRequest,
     service: AuthService = Depends(get_auth_service),
@@ -195,4 +212,3 @@ async def forgot_password(
         email=body.email,
         redirect_url=settings.password_reset_redirect_url,
     )
-

@@ -1,16 +1,18 @@
 from typing import Optional, Literal
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from app.models.timezone import TimeZone
 
 class ConversationMessage(BaseModel):
     """Represents a single message in a conversation, either from the user or the assistant."""
-    role: str  # "user" or "assistant"
-    content: str
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=8000)
 
 # /ai/chat
 class ChatRequest(BaseModel):
     """Represents a request to the chat endpoint, containing the conversation history."""
-    message: str
-    conversation_history: list[ConversationMessage] = []
+    message: str = Field(min_length=1, max_length=8000)
+    timezone: TimeZone = "UTC"
+    conversation_history: list[ConversationMessage] = Field(default_factory=list, max_length=20)
 
     model_config = {
         "json_schema_extra": {
@@ -46,4 +48,3 @@ class SemanticSearchResponse(BaseModel):
     query: str
     results: list[SearchResultItem]
     total: int
-

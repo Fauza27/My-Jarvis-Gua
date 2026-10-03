@@ -272,7 +272,7 @@ class TestExpenseExportEndpoint:
         from app.core.dependencies import get_current_user
 
         mock_service = MagicMock()
-        mock_service.export_expenses_csv.return_value = "id,amount\n1,10"
+        mock_service.iter_expenses_csv.return_value = iter(["id,amount\n1,10"])
         app.dependency_overrides[get_expense_service] = lambda: mock_service
         app.dependency_overrides[get_current_user] = lambda: mock_current_user
 

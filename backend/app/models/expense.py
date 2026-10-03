@@ -1,19 +1,38 @@
 from typing import Optional, Literal
 from pydantic import BaseModel, field_validator, model_validator
 from datetime import datetime
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+import math
 
 class ExpenseBase(BaseModel):
     
     @field_validator('amount', check_fields=False)
     def validate_amount(cls, value):
-        if value is not None and value <= 0:
-            raise ValueError('Amount must be greater than zero')
-        return round(value, 2) if value is not None else value
+        if value is None:
+            return value
+        if not math.isfinite(value):
+            raise ValueError('Amount must be finite')
+        try:
+            rounded = Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        except InvalidOperation:
+            raise ValueError('Invalid amount')
+        if not Decimal('0.01') <= rounded <= Decimal('9999999999999.99'):
+            raise ValueError('Amount must be between 0.01 and 9999999999999.99')
+        return float(rounded)
 
     @field_validator('category', 'subcategory', 'payment_method', check_fields=False)
     def normalize_category_fields(cls, value):
-        if value:
-            return value.strip().lower()
+        if value is None:
+            return value
+        normalized = value.strip().lower()
+        if len(normalized) > 50:
+            raise ValueError('Category and payment fields must be at most 50 characters')
+        return normalized
+
+    @field_validator('category', check_fields=False)
+    def require_category(cls, value):
+        if value is not None and not value:
+            raise ValueError('Category must not be blank')
         return value
 
     @field_validator('description', check_fields=False)
@@ -72,8 +91,16 @@ class UpdateExpenseRequest(ExpenseBase):
     payment_method: Optional[str] = None
     transaction_date: Optional[str] = None  
 
+    @model_validator(mode="after")
+    def reject_null_required_fields(self):
+        for field in ('amount', 'type', 'category'):
+            if field in self.model_fields_set and getattr(self, field) is None:
+                raise ValueError(f'{field} cannot be null')
+        return self
+
     def to_update_dict(self) -> dict:
-        return self.model_dump(exclude_none=True)    
+        data = self.model_dump(exclude_unset=True)
+        return data
     
     model_config = {
         "json_schema_extra": {

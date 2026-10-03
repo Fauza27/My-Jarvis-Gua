@@ -14,6 +14,7 @@
 # );
 
 from calendar import monthrange
+from decimal import Decimal
 import logging
 from supabase import Client
 from postgrest.exceptions import APIError
@@ -133,7 +134,7 @@ class ExpenseRepository:
         order_column = allowed_sort_columns.get(sort_by, "created_at")
         is_desc = sort_order != "asc"
 
-        response = query.order(order_column, desc=is_desc).limit(limit).offset(offset).execute()
+        response = query.order(order_column, desc=is_desc).order("id").limit(limit).offset(offset).execute()
         return response.data
 
     def count_all(
@@ -291,6 +292,25 @@ class ExpenseRepository:
     # =========================================================================
     # SUMMARY
     # =========================================================================
+    def _aggregate_summary(self, user_id: str, date_from: str | None = None, date_to: str | None = None) -> dict:
+        """Fallback for unavailable RPCs; page below PostgREST's row limit."""
+        totals = {"income": Decimal(0), "expense": Decimal(0)}
+        offset = 0
+        page_size = 500
+        while True:
+            query = self._client.table(self.VIEW).select("amount, type")
+            query = self._apply_list_filters(query, user_id, date_from=date_from, date_to=date_to)
+            rows = query.order("id").limit(page_size).offset(offset).execute().data
+            for row in rows:
+                totals[row["type"]] += Decimal(str(row["amount"]))
+            if len(rows) < page_size:
+                break
+            offset += len(rows)
+        return {
+            "total_income": float(totals["income"]),
+            "total_expense": float(totals["expense"]),
+            "net_balance": float(totals["income"] - totals["expense"]),
+        }
     def get_summary_all_time(self, user_id: str) -> dict:
         """Get all-time income/expense summary for a user."""
         rpc_result = self._summary_via_rpc(
@@ -300,20 +320,7 @@ class ExpenseRepository:
         if rpc_result is not None:
             return rpc_result
 
-        response = (
-            self._client
-            .table(self.VIEW)
-            .select("amount, type")
-            .eq("user_id", user_id)
-            .execute()
-        )
-        income  = float(sum(e["amount"] for e in response.data if e["type"] == "income"))
-        expense = float(sum(e["amount"] for e in response.data if e["type"] == "expense"))
-        return {
-            "total_income":  income,
-            "total_expense": expense,
-            "net_balance":   income - expense,
-        }
+        return self._aggregate_summary(user_id)
 
     def get_summary_by_date(self, user_id: str, transaction_date: str) -> dict:
         """
@@ -326,22 +333,7 @@ class ExpenseRepository:
         Returns:
             Dict with keys: total_income, total_expense, net_balance.
         """
-        response = (
-            self._client
-            .table(self.VIEW)
-            .select("amount, type")
-            .eq("user_id", user_id)
-            .eq("transaction_date", transaction_date)
-            .execute()
-        )
-        # Cast to float — DB returns NUMERIC as Decimal which breaks JSON serialization
-        income  = float(sum(e["amount"] for e in response.data if e["type"] == "income"))
-        expense = float(sum(e["amount"] for e in response.data if e["type"] == "expense"))
-        return {
-            "total_income":  income,
-            "total_expense": expense,
-            "net_balance":   income - expense,
-        }
+        return self._aggregate_summary(user_id, transaction_date, transaction_date)
 
     def get_summary_by_month(self, user_id: str, month: int, year: int) -> dict:
         """
@@ -370,23 +362,7 @@ class ExpenseRepository:
         start_date = f"{year}-{month:02d}-01"
         end_date   = f"{year}-{month:02d}-{last_day}"
 
-        response = (
-            self._client
-            .table(self.VIEW)
-            .select("amount, type")
-            .eq("user_id", user_id)
-            .gte("transaction_date", start_date)
-            .lte("transaction_date", end_date)
-            .execute()
-        )
-        # Cast to float — DB returns NUMERIC as Decimal which breaks JSON serialization
-        income  = float(sum(e["amount"] for e in response.data if e["type"] == "income"))
-        expense = float(sum(e["amount"] for e in response.data if e["type"] == "expense"))
-        return {
-            "total_income":  income,
-            "total_expense": expense,
-            "net_balance":   income - expense,
-        }
+        return self._aggregate_summary(user_id, start_date, end_date)
 
     def get_summary_by_year(self, user_id: str, year: int) -> dict:
         """
@@ -412,20 +388,4 @@ class ExpenseRepository:
         start_date = f"{year}-01-01"
         end_date   = f"{year}-12-31"
 
-        response = (
-            self._client
-            .table(self.VIEW)
-            .select("amount, type")
-            .eq("user_id", user_id)
-            .gte("transaction_date", start_date)
-            .lte("transaction_date", end_date)
-            .execute()
-        )
-        # Cast to float — DB returns NUMERIC as Decimal which breaks JSON serialization
-        income  = float(sum(e["amount"] for e in response.data if e["type"] == "income"))
-        expense = float(sum(e["amount"] for e in response.data if e["type"] == "expense"))
-        return {
-            "total_income":  income,
-            "total_expense": expense,
-            "net_balance":   income - expense,
-        }
+        return self._aggregate_summary(user_id, start_date, end_date)
